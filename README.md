@@ -1,34 +1,29 @@
 # DeskBreak
 
-DeskBreak is a movement timer for people who sit for most of a working session. The app prompts short movement breaks at research-based intervals. It does not replace normal aerobic or strength exercise.
-
-## Why
-
-Research on prolonged sitting shows that frequent short activity breaks reduce the acute glucose and insulin effects of sitting. See `projects/desk_movement/requirements.md` in this developer's local notes for the full research basis and requirements, and the in-app Evidence page (added in a later feature) for the same information.
+DeskBreak is a movement timer for people who sit for most of a working session. It prompts short movement breaks at research-based intervals. It does not replace regular aerobic or strength exercise.
 
 ## How it works
 
-* The default schedule prompts a movement break every 30 minutes.
-* Breaks alternate between two styles:
-  * **Break A** — a 3-5 minute walk.
-  * **Break B** — a 2-3 minute walk, plus optional resistance or mobility movements.
-* Walking is always an acceptable choice for the full length of any break.
+- DeskBreak prompts a movement break every 30 minutes.
+- Breaks alternate between two styles:
+  - A 3-5 minute walk.
+  - A 2-3 minute walk plus optional resistance or mobility exercises.
+- A walk is always an acceptable choice for the full length of any break.
 
-## Status
+## Research
 
-This app is under active development. Features are added one at a time and validated before the next feature starts. See open pull requests and issues for current progress.
+Short activity breaks during long sitting periods reduce the acute glucose and insulin effects of sitting, even without a full exercise session. This schedule is based on:
 
-## Privacy
+- Dunstan DW, Kingwell BA, Larsen R, et al. "Breaking Up Prolonged Sitting Reduces Postprandial Glucose and Insulin Responses." *Diabetes Care*, 2012.
+- Healy GN, Dunstan DW, Salmon J, et al. "Breaks in Sedentary Time: Beneficial Associations With Metabolic Risk." *Diabetes Care*, 2008.
+- Dempsey PC, Larsen RN, Sethi P, et al. "Benefits for Type 2 Diabetes of Interrupting Prolonged Sitting With Brief Bouts of Light Walking or Simple Resistance Activities." *Diabetes Care*, 2016.
+- Owen N, Healy GN, Matthews CE, Dunstan DW. "Too Much Sitting: The Population-Health Science of Sedentary Behavior." *Exercise and Sport Sciences Reviews*, 2010.
 
-DeskBreak runs entirely in the browser. It does not use an account or a backend. Activity history stays on the user's device.
-
-## Disclaimer
-
-DeskBreak provides general movement reminders based on research on sedentary behavior. It is not medical care or a treatment for posture, pain, cardiovascular disease, diabetes, or other conditions. Stop an exercise that causes pain, dizziness, or unusual symptoms and seek appropriate medical advice when needed.
+DeskBreak gives general movement reminders. It is not medical care and does not treat any condition. Stop an exercise that causes pain, dizziness, or unusual symptoms, and seek medical advice when needed.
 
 ## Development
 
-This is a static site with no build step. Serve the `src/` directory with any static file server, for example:
+DeskBreak is a static site with no build step. Serve the `src/` directory with any static file server:
 
 ```
 cd src
@@ -36,6 +31,10 @@ python3 -m http.server 8000
 ```
 
 Then open `http://localhost:8000` in a browser.
+
+## Privacy
+
+DeskBreak runs entirely in the browser. It has no account and no backend. Activity history stays on the device.
 
 ## License
 
