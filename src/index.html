@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>DeskBreak — Movement Timer</title>
+<link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+<header class="app-header">
+  <h1>DeskBreak</h1>
+  <p class="tagline">A movement timer for the workday.</p>
+  <p id="dev-speed-badge" class="dev-speed-badge hidden"></p>
+  <button id="dev-speed-toggle-btn" class="dev-speed-toggle"></button>
+</header>
+
+<main id="app">
+
+  <section id="idle-screen" class="screen">
+    <p>DeskBreak reminds you to get up and move every 30 minutes during an
+      approximately 8-hour workday, based on published research on
+      interrupting prolonged sitting.</p>
+    <button id="start-workday-btn" class="btn btn-primary">Start workday</button>
+  </section>
+
+  <section id="running-screen" class="screen hidden">
+    <div class="timer-display">
+      <div id="countdown" class="countdown">30:00</div>
+      <div id="next-break-label" class="next-break-label">
+        Next movement break: <strong id="next-break-type">BREAK A</strong>
+        <div id="next-break-detail">5 minute walk</div>
+      </div>
+    </div>
+
+    <dl class="stats">
+      <div class="stat">
+        <dt>Workday elapsed</dt>
+        <dd id="stat-elapsed">0:00</dd>
+      </div>
+      <div class="stat">
+        <dt>Breaks completed</dt>
+        <dd id="stat-completed">0</dd>
+      </div>
+      <div class="stat">
+        <dt>Breaks skipped</dt>
+        <dd id="stat-skipped">0</dd>
+      </div>
+      <div class="stat">
+        <dt>Movement minutes</dt>
+        <dd id="stat-movement-minutes">0</dd>
+      </div>
+    </dl>
+
+    <div class="controls">
+      <button id="pause-btn" class="btn">Pause</button>
+      <button id="resume-btn" class="btn hidden">Resume</button>
+      <button id="take-break-btn" class="btn">Take break now</button>
+      <button id="end-workday-btn" class="btn btn-danger">End workday</button>
+    </div>
+  </section>
+
+  <section id="ended-screen" class="screen hidden">
+    <h2>Workday ended</h2>
+    <dl class="stats">
+      <div class="stat">
+        <dt>Workday duration</dt>
+        <dd id="summary-duration">0:00</dd>
+      </div>
+      <div class="stat">
+        <dt>Breaks completed</dt>
+        <dd id="summary-completed">0</dd>
+      </div>
+      <div class="stat">
+        <dt>Breaks skipped</dt>
+        <dd id="summary-skipped">0</dd>
+      </div>
+      <div class="stat">
+        <dt>Movement minutes</dt>
+        <dd id="summary-movement-minutes">0</dd>
+      </div>
+    </dl>
+    <button id="restart-btn" class="btn btn-primary">Start a new workday</button>
+  </section>
+
+</main>
+
+<div id="break-overlay" class="overlay hidden">
+  <div class="break-card">
+    <div id="break-due-view">
+      <h2 id="break-title">BREAK A</h2>
+      <p class="break-heading">Time to move</p>
+      <p id="break-overdue-note" class="overdue-note hidden"></p>
+      <p id="break-instructions">Walk for 3–5 minutes.</p>
+      <p id="break-preferred">Preferred target: 5 minutes</p>
+      <div class="controls">
+        <button id="start-break-btn" class="btn btn-primary">Start break</button>
+        <button id="skip-break-btn" class="btn">Skip</button>
+      </div>
+    </div>
+
+    <div id="break-active-view" class="hidden">
+      <h2 id="break-active-title">BREAK A</h2>
+      <div id="break-countdown" class="countdown">5:00</div>
+      <p id="break-active-instructions">Walk for 3–5 minutes.</p>
+      <div class="controls">
+        <button id="end-break-btn" class="btn btn-primary">I'm done</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="app.js"></script>
+</body>
+</html>
