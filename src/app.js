@@ -62,6 +62,7 @@ const el = {
   runningScreen: document.getElementById("running-screen"),
   endedScreen: document.getElementById("ended-screen"),
   countdown: document.getElementById("countdown"),
+  countdownRing: document.getElementById("countdown-ring"),
   nextBreakType: document.getElementById("next-break-type"),
   nextBreakDetail: document.getElementById("next-break-detail"),
   statElapsed: document.getElementById("stat-elapsed"),
@@ -78,41 +79,47 @@ const el = {
   summaryCompleted: document.getElementById("summary-completed"),
   summarySkipped: document.getElementById("summary-skipped"),
   summaryMovementMinutes: document.getElementById("summary-movement-minutes"),
-  breakOverlay: document.getElementById("break-overlay"),
-  breakDueView: document.getElementById("break-due-view"),
-  breakActiveView: document.getElementById("break-active-view"),
-  breakTitle: document.getElementById("break-title"),
+  breakDueDialog: document.getElementById("break-due-dialog"),
+  breakActiveDialog: document.getElementById("break-active-dialog"),
   breakOverdueNote: document.getElementById("break-overdue-note"),
+  breakOverdueText: document.getElementById("break-overdue-text"),
   breakInstructions: document.getElementById("break-instructions"),
   breakPreferred: document.getElementById("break-preferred"),
   startBreakBtn: document.getElementById("start-break-btn"),
   skipBreakBtn: document.getElementById("skip-break-btn"),
-  breakActiveTitle: document.getElementById("break-active-title"),
   breakCountdown: document.getElementById("break-countdown"),
+  breakCountdownRing: document.getElementById("break-countdown-ring"),
   breakActiveInstructions: document.getElementById("break-active-instructions"),
   endBreakBtn: document.getElementById("end-break-btn"),
   devSpeedBadge: document.getElementById("dev-speed-badge"),
-  devSpeedToggleBtn: document.getElementById("dev-speed-toggle-btn"),
+  devSpeedToggle: document.getElementById("dev-speed-toggle"),
 };
 
 const TEST_SPEED = 60;
 
+el.devSpeedToggle.checked = DEV_SPEED > 1;
 if (DEV_SPEED > 1) {
   el.devSpeedBadge.textContent = `TEST MODE: ${DEV_SPEED}x SPEED`;
   el.devSpeedBadge.classList.remove("hidden");
-  el.devSpeedToggleBtn.textContent = "Disable test speed";
-} else {
-  el.devSpeedToggleBtn.textContent = `Enable test speed (${TEST_SPEED}x, for testing only)`;
 }
 
-el.devSpeedToggleBtn.addEventListener("click", () => {
+el.devSpeedToggle.addEventListener("change", (event) => {
   const url = new URL(location.href);
-  if (DEV_SPEED > 1) {
-    url.searchParams.delete("speed");
-  } else {
+  if (event.target.checked) {
     url.searchParams.set("speed", String(TEST_SPEED));
+  } else {
+    url.searchParams.delete("speed");
   }
   location.href = url.toString();
+});
+
+// Breaks are prompts, not dismissible dialogs: force the user to use the
+// explicit Start/Skip/I'm done buttons rather than Escape or a backdrop
+// click, so every break is either taken or explicitly skipped (section 16).
+[el.breakDueDialog, el.breakActiveDialog].forEach((dialog) => {
+  dialog.addEventListener("wa-request-close", (event) => {
+    event.preventDefault();
+  });
 });
 
 function startWorkday() {
@@ -233,9 +240,12 @@ function render() {
   el.nextBreakDetail.textContent = nextCopy.nextDetail;
 
   if (state.status === "running" && state.nextBreakAt !== null) {
-    el.countdown.textContent = formatMMSS(state.nextBreakAt - now);
+    const remainingMs = state.nextBreakAt - now;
+    el.countdown.textContent = formatMMSS(remainingMs);
+    el.countdownRing.value = 100 - (remainingMs / BREAK_INTERVAL_MS) * 100;
   } else if (state.status === "paused" && state.pausedRemainingMs !== null) {
     el.countdown.textContent = formatMMSS(state.pausedRemainingMs);
+    el.countdownRing.value = 100 - (state.pausedRemainingMs / BREAK_INTERVAL_MS) * 100;
   }
 
   el.statElapsed.textContent = formatMMSS(currentElapsedWorkdayMs(now));
@@ -249,21 +259,19 @@ function render() {
   el.resumeBtn.classList.toggle("hidden", state.status !== "paused");
   el.takeBreakBtn.classList.toggle("hidden", state.status !== "running");
 
-  const onBreakStatus = state.status === "breakDue" || state.status === "onBreak";
-  el.breakOverlay.classList.toggle("hidden", !onBreakStatus);
+  el.breakDueDialog.open = state.status === "breakDue";
+  el.breakActiveDialog.open = state.status === "onBreak";
 
   if (state.status === "breakDue") {
     const copy = BREAK_COPY[state.currentBreakType];
-    el.breakDueView.classList.remove("hidden");
-    el.breakActiveView.classList.add("hidden");
-    el.breakTitle.textContent = copy.title;
+    el.breakDueDialog.label = copy.title;
     el.breakInstructions.textContent = copy.dueInstructions;
     el.breakPreferred.textContent = copy.duePreferred;
 
     const overdueMs = now - state.breakScheduledAt;
     if (overdueMs > OVERDUE_NOTICE_THRESHOLD_MS) {
       const overdueMinutes = Math.round(overdueMs / 60000);
-      el.breakOverdueNote.textContent = `Movement break was due ${overdueMinutes} minute${overdueMinutes === 1 ? "" : "s"} ago.`;
+      el.breakOverdueText.textContent = `Movement break was due ${overdueMinutes} minute${overdueMinutes === 1 ? "" : "s"} ago.`;
       el.breakOverdueNote.classList.remove("hidden");
     } else {
       el.breakOverdueNote.classList.add("hidden");
@@ -272,11 +280,11 @@ function render() {
 
   if (state.status === "onBreak") {
     const copy = BREAK_COPY[state.currentBreakType];
-    el.breakDueView.classList.add("hidden");
-    el.breakActiveView.classList.remove("hidden");
-    el.breakActiveTitle.textContent = copy.title;
+    el.breakActiveDialog.label = copy.title;
     el.breakActiveInstructions.textContent = copy.activeInstructions;
-    el.breakCountdown.textContent = formatMMSS(state.breakEndsAt - now);
+    const breakRemainingMs = state.breakEndsAt - now;
+    el.breakCountdown.textContent = formatMMSS(breakRemainingMs);
+    el.breakCountdownRing.value = 100 - (breakRemainingMs / BREAK_TARGET_MS) * 100;
   }
 
   if (state.status === "ended") {

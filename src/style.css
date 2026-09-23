@@ -1,109 +1,95 @@
-:root {
-  --color-bg: #f7f7f5;
-  --color-surface: #ffffff;
-  --color-text: #1b1b1b;
-  --color-muted: #6b6b6b;
-  --color-primary: #1e6f5c;
-  --color-primary-dark: #17564682;
-  --color-danger: #b3413b;
-  --color-border: #dedede;
+body {
+  margin: 0;
+  font-family: var(--wa-font-family-body, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif);
+  background: var(--wa-color-surface-default, #f7f7f5);
+  color: var(--wa-color-text-normal, #1b1b1b);
 }
 
 * {
   box-sizing: border-box;
 }
 
-body {
-  margin: 0;
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-  background: var(--color-bg);
-  color: var(--color-text);
+.hidden {
+  display: none !important;
 }
 
 .app-header {
-  padding: 1.5rem 1rem 0.5rem;
+  padding: var(--wa-space-l, 1.5rem) var(--wa-space-m, 1rem) var(--wa-space-xs, 0.5rem);
   text-align: center;
 }
 
 .app-header h1 {
   margin: 0;
-  font-size: 1.75rem;
+  font-size: var(--wa-font-size-2xl, 1.75rem);
 }
 
 .tagline {
-  margin: 0.25rem 0 0;
-  color: var(--color-muted);
+  margin: var(--wa-space-2xs, 0.25rem) 0 0;
+  color: var(--wa-color-text-quiet, #6b6b6b);
 }
 
-.dev-speed-badge {
+#dev-speed-badge {
   display: inline-block;
-  margin: 0.5rem 0 0;
-  padding: 0.15rem 0.6rem;
-  border-radius: 999px;
-  background: #fff3cd;
-  color: #7a5b00;
-  font-size: 0.75rem;
-  font-weight: 700;
-  letter-spacing: 0.03em;
+  margin-top: var(--wa-space-xs, 0.5rem);
 }
 
 .dev-speed-toggle {
   display: block;
-  margin: 0.5rem auto 0;
-  appearance: none;
-  border: none;
-  background: none;
-  color: var(--color-muted);
-  font-size: 0.75rem;
-  text-decoration: underline;
-  cursor: pointer;
+  margin: var(--wa-space-s, 0.5rem) auto 0;
+  width: fit-content;
 }
 
 #app {
   max-width: 480px;
   margin: 0 auto;
-  padding: 1rem;
+  padding: var(--wa-space-m, 1rem);
 }
 
 .screen {
-  background: var(--color-surface);
-  border: 1px solid var(--color-border);
-  border-radius: 12px;
-  padding: 1.5rem;
   text-align: center;
 }
 
-.hidden {
-  display: none !important;
+.timer-display {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--wa-space-m, 1rem);
+  margin-bottom: var(--wa-space-m, 1rem);
+}
+
+.countdown-ring {
+  --size: 220px;
+  --track-width: 6px;
+  --indicator-width: 6px;
+  --indicator-color: var(--wa-color-brand-fill-loud, #1e6f5c);
 }
 
 .countdown {
-  font-size: 3.5rem;
+  font-size: 2.5rem;
   font-weight: 700;
   font-variant-numeric: tabular-nums;
   line-height: 1.1;
 }
 
 .next-break-label {
-  margin-top: 0.5rem;
-  color: var(--color-muted);
+  color: var(--wa-color-text-quiet, #6b6b6b);
 }
 
 #next-break-detail {
-  margin-top: 0.25rem;
+  margin-top: var(--wa-space-3xs, 0.25rem);
 }
 
 .stats {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 1rem;
-  margin: 1.5rem 0;
+  gap: var(--wa-space-m, 1rem);
+  margin: var(--wa-space-l, 1.5rem) 0;
   text-align: left;
 }
 
 .stat dt {
   font-size: 0.8rem;
-  color: var(--color-muted);
+  color: var(--wa-color-text-quiet, #6b6b6b);
 }
 
 .stat dd {
@@ -115,69 +101,24 @@ body {
 .controls {
   display: flex;
   flex-wrap: wrap;
-  gap: 0.5rem;
+  gap: var(--wa-space-s, 0.5rem);
   justify-content: center;
 }
 
-.btn {
-  appearance: none;
-  border: 1px solid var(--color-border);
-  background: var(--color-surface);
-  color: var(--color-text);
-  padding: 0.65rem 1.1rem;
-  border-radius: 8px;
-  font-size: 1rem;
-  cursor: pointer;
-}
-
-.btn:hover {
-  background: var(--color-bg);
-}
-
-.btn-primary {
-  background: var(--color-primary);
-  border-color: var(--color-primary);
-  color: white;
-}
-
-.btn-primary:hover {
-  background: #17564d;
-}
-
-.btn-danger {
-  color: var(--color-danger);
-  border-color: var(--color-danger);
-}
-
-.overlay {
-  position: fixed;
-  inset: 0;
-  background: rgba(0, 0, 0, 0.55);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 1rem;
-}
-
-.break-card {
-  background: var(--color-surface);
-  border-radius: 16px;
-  padding: 2rem;
+.break-dialog::part(panel) {
   max-width: 420px;
-  width: 100%;
+}
+
+.break-dialog::part(body) {
   text-align: center;
 }
 
 .break-heading {
   font-size: 1.5rem;
   font-weight: 700;
-  margin: 0.25rem 0 1rem;
-}
-
-.overdue-note {
-  color: var(--color-danger);
+  margin: var(--wa-space-2xs, 0.25rem) 0 var(--wa-space-m, 1rem);
 }
 
 #break-preferred {
-  color: var(--color-muted);
+  color: var(--wa-color-text-quiet, #6b6b6b);
 }
