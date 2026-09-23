@@ -1,6 +1,6 @@
 # DeskBreak
 
-DeskBreak is a movement timer for people who sit for most of an approximately 8-hour workday. The app prompts short movement breaks at research-based intervals. It does not replace normal aerobic or strength exercise.
+DeskBreak is a movement timer for people who sit for most of a working session. The app prompts short movement breaks at research-based intervals. It does not replace normal aerobic or strength exercise.
 
 ## Why
 
