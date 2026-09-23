@@ -18,21 +18,19 @@
 
 <header class="app-header">
   <h1>DeskBreak</h1>
-  <p class="tagline">A movement timer for the workday.</p>
-  <wa-tag id="dev-speed-badge" variant="warning" size="small" class="hidden"></wa-tag>
-  <wa-switch id="dev-speed-toggle" size="small" class="dev-speed-toggle">Test speed (60x)</wa-switch>
+  <p class="tagline">A movement timer for your working session.</p>
 </header>
 
 <main id="app">
 
   <section id="idle-screen" class="screen">
     <wa-card>
-      <p>DeskBreak reminds you to get up and move every 30 minutes during an
-        approximately 8-hour workday, based on published research on
-        interrupting prolonged sitting.</p>
-      <wa-button id="start-workday-btn" variant="brand" size="large">
+      <p>DeskBreak reminds you to get up and move every 30 minutes during
+        your working session, based on published research on interrupting
+        prolonged sitting.</p>
+      <wa-button id="start-session-btn" variant="brand" size="large">
         <wa-icon slot="prefix" name="play"></wa-icon>
-        Start workday
+        Start working session
       </wa-button>
     </wa-card>
   </section>
@@ -50,7 +48,7 @@
 
     <dl class="stats">
       <div class="stat">
-        <dt>Workday elapsed</dt>
+        <dt>Working session elapsed</dt>
         <dd id="stat-elapsed">0:00</dd>
       </div>
       <div class="stat">
@@ -80,18 +78,18 @@
         <wa-icon slot="prefix" name="person-walking"></wa-icon>
         Take break now
       </wa-button>
-      <wa-button id="end-workday-btn" variant="danger" appearance="outlined">
-        End workday
+      <wa-button id="end-session-btn" variant="danger" appearance="outlined">
+        End working session
       </wa-button>
     </div>
   </section>
 
   <section id="ended-screen" class="screen hidden">
     <wa-card>
-      <h2 slot="header">Workday ended</h2>
+      <h2 slot="header">Working session ended</h2>
       <dl class="stats">
         <div class="stat">
-          <dt>Workday duration</dt>
+          <dt>Working session duration</dt>
           <dd id="summary-duration">0:00</dd>
         </div>
         <div class="stat">
@@ -107,7 +105,7 @@
           <dd id="summary-movement-minutes">0</dd>
         </div>
       </dl>
-      <wa-button id="restart-btn" variant="brand">Start a new workday</wa-button>
+      <wa-button id="restart-btn" variant="brand">Start a new working session</wa-button>
     </wa-card>
   </section>
 
@@ -140,6 +138,16 @@
     I'm done
   </wa-button>
 </wa-dialog>
+
+<!--
+  Dev-only panel. Gated behind DEV_PANEL_ENABLED in app.js — set that to
+  false (or delete this block) before deploying to GitHub Pages.
+-->
+<aside id="dev-panel" class="side-panel side-panel-right">
+  <p class="side-panel-title">Developer panel</p>
+  <wa-tag id="dev-speed-badge" variant="warning" size="small" class="hidden"></wa-tag>
+  <wa-switch id="dev-speed-toggle" size="small">Test speed (60x)</wa-switch>
+</aside>
 
 <script src="app.js"></script>
 </body>

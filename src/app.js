@@ -5,6 +5,10 @@
 // normal operation (default speed is 1x).
 const DEV_SPEED = Math.max(1, Number(new URLSearchParams(location.search).get("speed")) || 1);
 
+// Set to false (or delete the #dev-panel block in index.html) before
+// deploying to GitHub Pages — the panel is a testing aid only.
+const DEV_PANEL_ENABLED = true;
+
 const BREAK_INTERVAL_MS = (30 * 60 * 1000) / DEV_SPEED;
 const BREAK_TARGET_MS = (5 * 60 * 1000) / DEV_SPEED;
 const OVERDUE_NOTICE_THRESHOLD_MS = (60 * 1000) / DEV_SPEED;
@@ -40,10 +44,14 @@ function formatMMSS(ms) {
   return `${minutes}:${String(seconds).padStart(2, "0")}`;
 }
 
+function progressPercent(remainingMs, totalMs) {
+  return Math.min(100, Math.max(0, 100 - (remainingMs / totalMs) * 100));
+}
+
 const state = {
   status: "idle", // idle | running | paused | breakDue | onBreak | ended
-  workdayStartedAt: null,
-  workdayEndedAt: null,
+  sessionStartedAt: null,
+  sessionEndedAt: null,
   nextBreakAt: null,
   pausedRemainingMs: null,
   pauseStartedAt: null,
@@ -72,8 +80,8 @@ const el = {
   pauseBtn: document.getElementById("pause-btn"),
   resumeBtn: document.getElementById("resume-btn"),
   takeBreakBtn: document.getElementById("take-break-btn"),
-  endWorkdayBtn: document.getElementById("end-workday-btn"),
-  startWorkdayBtn: document.getElementById("start-workday-btn"),
+  endSessionBtn: document.getElementById("end-session-btn"),
+  startSessionBtn: document.getElementById("start-session-btn"),
   restartBtn: document.getElementById("restart-btn"),
   summaryDuration: document.getElementById("summary-duration"),
   summaryCompleted: document.getElementById("summary-completed"),
@@ -91,9 +99,14 @@ const el = {
   breakCountdownRing: document.getElementById("break-countdown-ring"),
   breakActiveInstructions: document.getElementById("break-active-instructions"),
   endBreakBtn: document.getElementById("end-break-btn"),
+  devPanel: document.getElementById("dev-panel"),
   devSpeedBadge: document.getElementById("dev-speed-badge"),
   devSpeedToggle: document.getElementById("dev-speed-toggle"),
 };
+
+if (!DEV_PANEL_ENABLED) {
+  el.devPanel.remove();
+}
 
 const TEST_SPEED = 60;
 
@@ -122,11 +135,11 @@ el.devSpeedToggle.addEventListener("change", (event) => {
   });
 });
 
-function startWorkday() {
+function startSession() {
   const now = Date.now();
   state.status = "running";
-  state.workdayStartedAt = now;
-  state.workdayEndedAt = null;
+  state.sessionStartedAt = now;
+  state.sessionEndedAt = null;
   state.nextBreakAt = now + BREAK_INTERVAL_MS;
   state.pausedMsTotal = 0;
   state.pauseStartedAt = null;
@@ -137,7 +150,7 @@ function startWorkday() {
   render();
 }
 
-function pauseWorkday() {
+function pauseSession() {
   if (state.status !== "running") return;
   state.pausedRemainingMs = state.nextBreakAt - Date.now();
   state.pauseStartedAt = Date.now();
@@ -145,7 +158,7 @@ function pauseWorkday() {
   render();
 }
 
-function resumeWorkday() {
+function resumeSession() {
   if (state.status !== "paused") return;
   state.pausedMsTotal += Date.now() - state.pauseStartedAt;
   state.pauseStartedAt = null;
@@ -191,8 +204,8 @@ function endBreak() {
   render();
 }
 
-function endWorkday() {
-  state.workdayEndedAt = Date.now();
+function endSession() {
+  state.sessionEndedAt = Date.now();
   state.status = "ended";
   render();
 }
@@ -202,13 +215,13 @@ function restart() {
   render();
 }
 
-function currentElapsedWorkdayMs(now) {
-  if (!state.workdayStartedAt) return 0;
+function currentElapsedSessionMs(now) {
+  if (!state.sessionStartedAt) return 0;
   const openPauseMs =
     state.status === "paused" && state.pauseStartedAt
       ? now - state.pauseStartedAt
       : 0;
-  return now - state.workdayStartedAt - state.pausedMsTotal - openPauseMs;
+  return now - state.sessionStartedAt - state.pausedMsTotal - openPauseMs;
 }
 
 function tick() {
@@ -242,13 +255,13 @@ function render() {
   if (state.status === "running" && state.nextBreakAt !== null) {
     const remainingMs = state.nextBreakAt - now;
     el.countdown.textContent = formatMMSS(remainingMs);
-    el.countdownRing.value = 100 - (remainingMs / BREAK_INTERVAL_MS) * 100;
+    el.countdownRing.value = progressPercent(remainingMs, BREAK_INTERVAL_MS);
   } else if (state.status === "paused" && state.pausedRemainingMs !== null) {
     el.countdown.textContent = formatMMSS(state.pausedRemainingMs);
-    el.countdownRing.value = 100 - (state.pausedRemainingMs / BREAK_INTERVAL_MS) * 100;
+    el.countdownRing.value = progressPercent(state.pausedRemainingMs, BREAK_INTERVAL_MS);
   }
 
-  el.statElapsed.textContent = formatMMSS(currentElapsedWorkdayMs(now));
+  el.statElapsed.textContent = formatMMSS(currentElapsedSessionMs(now));
   el.statCompleted.textContent = String(state.breaksCompleted);
   el.statSkipped.textContent = String(state.breaksSkipped);
   el.statMovementMinutes.textContent = String(
@@ -284,12 +297,12 @@ function render() {
     el.breakActiveInstructions.textContent = copy.activeInstructions;
     const breakRemainingMs = state.breakEndsAt - now;
     el.breakCountdown.textContent = formatMMSS(breakRemainingMs);
-    el.breakCountdownRing.value = 100 - (breakRemainingMs / BREAK_TARGET_MS) * 100;
+    el.breakCountdownRing.value = progressPercent(breakRemainingMs, BREAK_TARGET_MS);
   }
 
   if (state.status === "ended") {
     el.summaryDuration.textContent = formatMMSS(
-      state.workdayEndedAt - state.workdayStartedAt - state.pausedMsTotal
+      state.sessionEndedAt - state.sessionStartedAt - state.pausedMsTotal
     );
     el.summaryCompleted.textContent = String(state.breaksCompleted);
     el.summarySkipped.textContent = String(state.breaksSkipped);
@@ -299,11 +312,11 @@ function render() {
   }
 }
 
-el.startWorkdayBtn.addEventListener("click", startWorkday);
-el.pauseBtn.addEventListener("click", pauseWorkday);
-el.resumeBtn.addEventListener("click", resumeWorkday);
+el.startSessionBtn.addEventListener("click", startSession);
+el.pauseBtn.addEventListener("click", pauseSession);
+el.resumeBtn.addEventListener("click", resumeSession);
 el.takeBreakBtn.addEventListener("click", takeBreakNow);
-el.endWorkdayBtn.addEventListener("click", endWorkday);
+el.endSessionBtn.addEventListener("click", endSession);
 el.restartBtn.addEventListener("click", restart);
 el.startBreakBtn.addEventListener("click", startBreak);
 el.skipBreakBtn.addEventListener("click", skipBreak);
