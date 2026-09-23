@@ -3,141 +3,196 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<meta name="color-scheme" content="light dark" />
 <title>DeskBreak — Movement Timer</title>
 
-<!-- Web Awesome: default theme + autoloader -->
-<link rel="stylesheet" href="https://ka-f.webawesome.com/webawesome@3.13.0/styles/themes/default.css" />
-<script type="module" src="https://ka-f.webawesome.com/webawesome@3.13.0/webawesome.loader.js"></script>
+<!-- Applied before first paint so there's no flash of the wrong theme.
+     Pico keys its own light/dark form-control colors off this same
+     data-theme attribute, so setting it explicitly (rather than leaving
+     Pico to auto-detect prefers-color-scheme on its own) is what keeps
+     Pico's native checkbox/input colors and our own theme in sync. -->
+<script>
+  (function () {
+    var stored = localStorage.getItem("deskbreak-theme");
+    var theme = stored || (window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light");
+    document.documentElement.setAttribute("data-theme", theme);
+  })();
+</script>
 
-<!-- Web Awesome utility classes -->
-<link rel="stylesheet" href="https://ka-f.webawesome.com/webawesome@3.13.0/styles/utilities.css" />
+<!-- Pico CSS, vendored locally (classless-friendly, styles plain native
+     HTML elements — no shadow DOM, no custom-element internals to fight) -->
+<link rel="stylesheet" href="styles/pico-main/css/pico.min.css" />
 
-<link rel="stylesheet" href="style.css" />
+<!-- Phosphor Icons -->
+<link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/@phosphor-icons/web@2.1.1/src/regular/style.css" />
+
+<link rel="stylesheet" href="styles/style.css" />
 </head>
 <body>
 
-<header class="app-header">
-  <h1>DeskBreak</h1>
-  <p class="tagline">A movement timer for your working session.</p>
-</header>
+<button id="theme-toggle-btn" class="theme-toggle" aria-label="Toggle dark mode">
+  <i class="ph ph-moon" aria-hidden="true"></i>
+</button>
 
 <main id="app">
 
   <section id="idle-screen" class="screen">
-    <wa-card>
-      <p>DeskBreak reminds you to get up and move every 30 minutes during
-        your working session, based on published research on interrupting
-        prolonged sitting.</p>
-      <wa-button id="start-session-btn" variant="brand" size="large">
-        <wa-icon slot="prefix" name="play"></wa-icon>
-        Start working session
-      </wa-button>
-    </wa-card>
+    <div class="theme-card start-card">
+      <div class="start-card-header">
+        <span class="start-brand">DeskBreak</span>
+      </div>
+      <h2 class="start-heading">Work Timer</h2>
+      <p class="start-heading-sub">The Smart Way</p>
+      <p id="start-date" class="start-date"></p>
+      <button id="start-session-btn" class="btn-filled btn-large">
+        Begin Session
+        <i class="ph ph-arrow-right" aria-hidden="true"></i>
+      </button>
+    </div>
   </section>
 
   <section id="running-screen" class="screen hidden">
-    <div class="timer-display">
-      <wa-progress-ring id="countdown-ring" value="0" class="countdown-ring">
-        <div id="countdown" class="countdown">30:00</div>
-      </wa-progress-ring>
-      <div id="next-break-label" class="next-break-label">
-        Next movement break: <strong id="next-break-type">BREAK A</strong>
-        <div id="next-break-detail">5 minute walk</div>
+    <div class="theme-card running-card">
+      <div class="start-card-header">
+        <span class="start-brand">DeskBreak</span>
       </div>
-    </div>
+      <div class="timer-display">
+        <div id="countdown-ring" class="countdown-ring">
+          <div id="countdown" class="countdown">30:00</div>
+        </div>
+      </div>
 
-    <dl class="stats">
-      <div class="stat">
-        <dt>Working session elapsed</dt>
-        <dd id="stat-elapsed">0:00</dd>
-      </div>
-      <div class="stat">
-        <dt>Breaks completed</dt>
-        <dd id="stat-completed">0</dd>
-      </div>
-      <div class="stat">
-        <dt>Breaks skipped</dt>
-        <dd id="stat-skipped">0</dd>
-      </div>
-      <div class="stat">
-        <dt>Movement minutes</dt>
-        <dd id="stat-movement-minutes">0</dd>
-      </div>
-    </dl>
+      <dl class="stats">
+        <div class="stat">
+          <dt>Time elapsed</dt>
+          <dd id="stat-elapsed">0:00</dd>
+        </div>
+        <div class="stat">
+          <dt>Breaks completed</dt>
+          <dd id="stat-completed">0</dd>
+        </div>
+        <div class="stat">
+          <dt>Breaks skipped</dt>
+          <dd id="stat-skipped">0</dd>
+        </div>
+        <div class="stat">
+          <dt>Movement minutes</dt>
+          <dd id="stat-movement-minutes">0</dd>
+        </div>
+      </dl>
 
-    <div class="controls">
-      <wa-button id="pause-btn" variant="neutral">
-        <wa-icon slot="prefix" name="pause"></wa-icon>
-        Pause
-      </wa-button>
-      <wa-button id="resume-btn" variant="neutral" class="hidden">
-        <wa-icon slot="prefix" name="play"></wa-icon>
-        Resume
-      </wa-button>
-      <wa-button id="take-break-btn" variant="brand" appearance="outlined">
-        <wa-icon slot="prefix" name="person-walking"></wa-icon>
-        Take break now
-      </wa-button>
-      <wa-button id="end-session-btn" variant="danger" appearance="outlined">
-        End working session
-      </wa-button>
+      <div class="controls controls-vertical">
+        <div class="control-row">
+          <button id="pause-btn" class="btn-outlined">
+            <i class="ph ph-pause" aria-hidden="true"></i>
+            Pause
+          </button>
+          <button id="resume-btn" class="btn-outlined hidden">
+            <i class="ph ph-play" aria-hidden="true"></i>
+            Resume
+          </button>
+        </div>
+        <div class="control-row">
+          <button id="quick-break-3-btn" class="btn-filled break-btn">
+            <i class="ph ph-person-simple-walk" aria-hidden="true"></i>
+            3-min break
+            <span id="quick-suggested-tag-3" class="suggested-inline hidden">Suggested</span>
+          </button>
+          <button id="quick-break-5-btn" class="btn-filled break-btn">
+            <i class="ph ph-person-simple-walk" aria-hidden="true"></i>
+            5-min break
+            <span id="quick-suggested-tag-5" class="suggested-inline hidden">Suggested</span>
+          </button>
+        </div>
+        <div class="control-row">
+          <button id="end-session-btn" class="btn-outlined">
+            <i class="ph ph-stop" aria-hidden="true"></i>
+            End Session
+          </button>
+        </div>
+      </div>
     </div>
   </section>
 
   <section id="ended-screen" class="screen hidden">
-    <wa-card>
-      <h2 slot="header">Working session ended</h2>
-      <dl class="stats">
-        <div class="stat">
-          <dt>Working session duration</dt>
-          <dd id="summary-duration">0:00</dd>
-        </div>
-        <div class="stat">
-          <dt>Breaks completed</dt>
-          <dd id="summary-completed">0</dd>
-        </div>
-        <div class="stat">
-          <dt>Breaks skipped</dt>
-          <dd id="summary-skipped">0</dd>
-        </div>
-        <div class="stat">
-          <dt>Movement minutes</dt>
-          <dd id="summary-movement-minutes">0</dd>
-        </div>
-      </dl>
-      <wa-button id="restart-btn" variant="brand">Start a new working session</wa-button>
-    </wa-card>
+    <div class="theme-card">
+      <div class="theme-card-header">
+        <span class="start-brand">DeskBreak</span>
+        <h2>Working Session Report</h2>
+        <p id="summary-start-timestamp" class="summary-start-timestamp"></p>
+      </div>
+      <div class="theme-card-body">
+        <dl class="stats">
+          <div class="stat">
+            <dt>Working session duration</dt>
+            <dd id="summary-duration">0:00</dd>
+          </div>
+          <div class="stat">
+            <dt>Breaks completed</dt>
+            <dd id="summary-completed">0</dd>
+          </div>
+          <div class="stat">
+            <dt>Breaks skipped</dt>
+            <dd id="summary-skipped">0</dd>
+          </div>
+          <div class="stat">
+            <dt>Movement minutes</dt>
+            <dd id="summary-movement-minutes">0</dd>
+          </div>
+        </dl>
+        <button id="restart-btn" class="btn-filled">
+          Begin Session
+          <i class="ph ph-arrow-right" aria-hidden="true"></i>
+        </button>
+      </div>
+    </div>
   </section>
 
 </main>
 
-<wa-dialog id="break-due-dialog" label="BREAK A" class="break-dialog">
-  <p class="break-heading">Time to move</p>
-  <wa-callout id="break-overdue-note" variant="warning" class="hidden">
-    <wa-icon slot="icon" name="clock"></wa-icon>
-    <span id="break-overdue-text"></span>
-  </wa-callout>
-  <p id="break-instructions">Walk for 3–5 minutes.</p>
-  <p id="break-preferred">Preferred target: 5 minutes</p>
-  <wa-button id="start-break-btn" slot="footer" variant="brand">
-    <wa-icon slot="prefix" name="play"></wa-icon>
-    Start break
-  </wa-button>
-  <wa-button id="skip-break-btn" slot="footer" variant="neutral" appearance="outlined">
-    Skip
-  </wa-button>
-</wa-dialog>
+<dialog id="break-due-dialog">
+  <article class="theme-card break-dialog">
+    <h2>Time to move</h2>
+    <div class="break-actions">
+      <div class="control-row">
+        <button id="start-break-3-btn" class="btn-filled break-btn">
+          <i class="ph ph-person-simple-walk" aria-hidden="true"></i>
+          3-min break
+          <span id="suggested-tag-3" class="suggested-inline hidden">Suggested</span>
+        </button>
+        <button id="start-break-5-btn" class="btn-filled break-btn">
+          <i class="ph ph-person-simple-walk" aria-hidden="true"></i>
+          5-min break
+          <span id="suggested-tag-5" class="suggested-inline hidden">Suggested</span>
+        </button>
+      </div>
+      <div class="control-row">
+        <button id="skip-break-btn" class="btn-outlined">
+          Skip
+        </button>
+      </div>
+    </div>
+  </article>
+</dialog>
 
-<wa-dialog id="break-active-dialog" label="BREAK A" class="break-dialog">
-  <wa-progress-ring id="break-countdown-ring" value="0" class="countdown-ring">
-    <div id="break-countdown" class="countdown">5:00</div>
-  </wa-progress-ring>
-  <p id="break-active-instructions">Walk for 3–5 minutes.</p>
-  <wa-button id="end-break-btn" slot="footer" variant="brand">
-    <wa-icon slot="prefix" name="check"></wa-icon>
-    I'm done
-  </wa-button>
-</wa-dialog>
+<dialog id="break-active-dialog">
+  <article class="theme-card break-dialog">
+    <h2 id="break-active-title">Break</h2>
+    <div id="break-countdown-ring" class="countdown-ring countdown-ring-small">
+      <div id="break-countdown" class="countdown">5:00</div>
+    </div>
+    <div id="break-checklist" class="exercise-picker"></div>
+    <div class="control-row">
+      <button id="end-break-btn" class="btn-filled">
+        <i class="ph ph-check" aria-hidden="true"></i>
+        I'm done
+      </button>
+      <button id="cancel-break-btn" class="btn-outlined">
+        Cancel
+      </button>
+    </div>
+  </article>
+</dialog>
 
 <!--
   Dev-only panel. Gated behind DEV_PANEL_ENABLED in app.js — set that to
@@ -145,8 +200,10 @@
 -->
 <aside id="dev-panel" class="side-panel side-panel-right">
   <p class="side-panel-title">Developer panel</p>
-  <wa-tag id="dev-speed-badge" variant="warning" size="small" class="hidden"></wa-tag>
-  <wa-switch id="dev-speed-toggle" size="small">Test speed (60x)</wa-switch>
+  <label>
+    <input type="checkbox" id="dev-speed-toggle" role="switch" />
+    Test speed (200x)
+  </label>
 </aside>
 
 <script src="app.js"></script>
