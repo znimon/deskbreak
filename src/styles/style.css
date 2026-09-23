@@ -1,0 +1,629 @@
+/* ---------------------------------------------------------------------
+   Design tokens. Everything you're likely to want to hand-tune —
+   palette, corner rounding, padding, and gaps — lives in these two
+   :root blocks. The rest of the file only ever references these
+   variables, so a change here applies everywhere that value is used.
+
+   Color: swap a different 3-color palette by editing only
+   --theme-card / --theme-button / --theme-accent. --theme-alpha and the
+   two --theme-ink-on-card values are derived support colors, not part
+   of the palette itself.
+
+   Text, icon, and border colors — every one in the app traces back to
+   one of these variables (no color literals elsewhere in this file):
+     --theme-ink-on-card / --theme-ink-on-card-quiet  text + icons on the
+       theme-colored cards and dialogs (the orange surfaces)
+     --surface-text / --surface-text-quiet            text + icons on
+       off-card surfaces (dev panel, theme toggle)
+     --theme-outline                                  every border, plus
+       filled-button text (icons never set their own color — as font
+       glyphs they render in currentColor, so they always match
+       whichever of the above their container uses)
+     --surface-border                                 borders on off-card
+       surfaces (dev panel)
+     --checkbox-border                                exercise checkbox
+       border
+
+   Everything here targets plain native HTML elements (button, dialog,
+   input) styled by Pico — no shadow DOM, no custom-element internals.
+   That's the whole reason for using Pico: normal CSS specificity and
+   cascade rules apply, with nothing hidden to fight.
+   --------------------------------------------------------------------- */
+:root {
+  --theme-card: #547076;   /* card & dialog backgrounds */
+  --theme-button: color-mix(in srgb, var(--theme-card) 50%, var(--theme-outline)); /* button fill: a lighter tint of the card color, no separate hue */
+  --theme-accent: #dd4027; /* countdown ring */
+  --theme-outline: #f5ecc2; /* every border, plus filled-button text */
+  --theme-alpha: 60%;      /* transparency for the suggested-exercise-card highlight */
+
+  --theme-ink-on-card: #f5ecc2;                                          /* headline/stat text + icons on --theme-card */
+  --theme-ink-on-card-quiet: color-mix(in srgb, var(--theme-ink-on-card) 80%, transparent); /* secondary text on --theme-card */
+
+  /* Page background and "off-card" surfaces (exercise cards, dev panel,
+     form controls) — separate from --theme-card, which never changes
+     between light and dark. */
+  --app-bg: #faf9f6;
+  --surface-bg: #faf9f6;
+  --surface-border: #dedede;
+  --surface-text: #17161f;
+  --surface-text-quiet: #6b6b6b;
+
+  /* Deliberately not swapped in [data-theme="dark"] below — the exercise
+     checkboxes sit on theme-invariant orange cards and must stay light in
+     both themes, unlike --app-bg/--surface-bg which do swap. */
+  --checkbox-bg: #faf9f6;
+  --checkbox-border: rgba(0, 0, 0, 0.2);
+}
+
+[data-theme="dark"] {
+  --app-bg: #17161f;
+  --surface-bg: #23222b;
+  --surface-border: #3a3944;
+  --surface-text: #f2f1f5;
+  --surface-text-quiet: #a9a7b3;
+}
+
+/* Spacing & sizing. A small named scale (--space-*) for generic gaps,
+   plus a few one-off named tokens for measurements that are tuned to a
+   specific component (dialog widths, ring size, radii) rather than
+   drawn from the general scale. */
+:root {
+  --space-2xs: 0.15rem;
+  --space-xs: 0.35rem;
+  --space-sm: 0.5rem;
+  --space-sm-md: 0.65rem;
+  --space-md: 0.85rem;
+  --space-lg: 1rem;
+  --space-xl: 1.5rem;
+  --space-2xl: 2rem;
+  --space-3xl: 3rem;
+  --space-4xl: 4rem;
+
+  --radius-card: 22px;
+  --radius-button: 10px;
+  --shadow-card: 0 4px 12px rgba(0, 0, 0, 0.12);
+
+  --btn-padding-y: 0.65rem;
+  --btn-padding-x: 1.1rem;
+  --btn-padding-y-large: 0.9rem;
+  --btn-padding-x-large: 1.4rem;
+  --break-btn-padding-y: 0.65rem;
+  --break-btn-padding-x: 0.6rem;
+  --break-btn-min-height: 3.5rem;
+
+  --dialog-max-width: 420px;
+  --break-due-dialog-max-width: 240px;
+  --break-dialog-padding-y: 2rem;
+  --break-dialog-padding-x: 1rem;
+  --break-dialog-heading-gap: var(--space-4xl);
+
+  --ring-size: 190px;
+  --ring-size-small: 160px;
+  --ring-inset: 14px;
+}
+
+html {
+  background: var(--app-bg);
+  min-height: 100%;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  background: var(--app-bg);
+  color: var(--surface-text);
+}
+
+.theme-toggle {
+  position: fixed;
+  top: var(--space-xl);
+  left: var(--space-lg);
+  z-index: 20;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  border: 1px solid var(--surface-border);
+  background: var(--surface-bg);
+  color: var(--surface-text);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.2rem;
+  cursor: pointer;
+  padding: 0;
+  outline: none;
+  box-shadow: none !important;
+}
+
+.theme-toggle:focus-visible {
+  outline: 2px solid var(--theme-outline);
+  outline-offset: 2px;
+}
+
+.hidden {
+  display: none !important;
+}
+
+#app {
+  max-width: 560px;
+  margin: 0 auto;
+  padding: var(--space-lg);
+}
+
+.screen {
+  text-align: center;
+}
+
+/* --- Cards: plain divs, background set directly --- */
+
+.theme-card {
+  background: var(--theme-card);
+  border-radius: var(--radius-card);
+  padding: var(--space-xl);
+  box-shadow: var(--shadow-card);
+}
+
+.theme-card-header {
+  padding: var(--space-xl) var(--space-xl) var(--space-lg);
+  margin: calc(var(--space-xl) * -1) calc(var(--space-xl) * -1) var(--space-lg);
+  border-bottom: 1px solid color-mix(in srgb, var(--theme-ink-on-card) 25%, transparent);
+  text-align: left;
+}
+
+.theme-card-header h2 {
+  margin: 0.25rem 0 var(--space-sm);
+  color: var(--theme-ink-on-card);
+}
+
+.start-card {
+  padding: var(--space-2xl);
+}
+
+.start-card-header {
+  text-align: left;
+  margin-bottom: var(--space-xl);
+}
+
+.start-brand {
+  font-size: 0.85rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--theme-ink-on-card);
+}
+
+.start-heading {
+  margin: 0 0 var(--space-sm);
+  font-size: 1.75rem;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+  color: var(--theme-ink-on-card);
+}
+
+.start-heading-sub {
+  margin: 0 0 var(--space-xl);
+  font-size: 1rem;
+  font-weight: 500;
+  color: var(--theme-ink-on-card-quiet);
+}
+
+.start-date {
+  margin: 0 0 var(--space-xl);
+  color: var(--theme-ink-on-card-quiet);
+  font-size: 0.95rem;
+}
+
+#start-session-btn {
+  margin-bottom: 0;
+}
+
+.summary-start-timestamp {
+  margin: 0;
+  color: var(--theme-ink-on-card-quiet);
+  font-size: 0.95rem;
+}
+
+/* --- Countdown ring: plain CSS conic-gradient --- */
+
+.timer-display {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-lg);
+  margin-bottom: var(--space-lg);
+}
+
+.countdown-ring {
+  --percent: 0;
+  position: relative;
+  width: var(--ring-size);
+  height: var(--ring-size);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: conic-gradient(
+    var(--theme-accent) calc(var(--percent) * 1%),
+    rgba(255, 247, 234, 0.25) calc(var(--percent) * 1%)
+  );
+}
+
+.countdown-ring::before {
+  content: "";
+  position: absolute;
+  inset: var(--ring-inset);
+  border-radius: 50%;
+  background: var(--theme-card);
+}
+
+.countdown-ring-small {
+  width: var(--ring-size-small);
+  height: var(--ring-size-small);
+  margin: 0 auto var(--space-2xl);
+}
+
+.countdown {
+  position: relative;
+  font-size: 2.5rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  line-height: 1.1;
+  color: var(--theme-ink-on-card);
+}
+
+.stats {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-lg);
+  margin: var(--space-xl) 0;
+  text-align: left;
+}
+
+.stat dt {
+  font-size: 0.8rem !important;
+  color: var(--theme-ink-on-card-quiet);
+}
+
+.stat dd {
+  margin: 0 !important;
+  font-size: 1.25rem !important;
+  font-weight: 600;
+  color: var(--theme-ink-on-card);
+}
+
+/* --- Buttons: plain <button>, styled directly (overriding Pico's own
+   default button coloring, which we don't use) --- */
+
+button.btn-filled,
+button.btn-outlined {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4em;
+  width: auto;
+  margin: 0;
+  padding: var(--btn-padding-y) var(--btn-padding-x);
+  border-radius: var(--radius-button);
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  outline: none;
+  box-shadow: none !important;
+}
+
+/* Removes the browser's default (usually blue) focus ring on click, but
+   keeps a visible indicator for keyboard navigation — :focus-visible only
+   matches keyboard/programmatic focus, not mouse clicks. Pico signals
+   focus with box-shadow (which follows the border-radius), not outline,
+   so both properties need resetting — outline alone left a visible ring
+   after every click. */
+button.btn-filled:focus-visible,
+button.btn-outlined:focus-visible {
+  outline: 2px solid var(--theme-outline);
+  outline-offset: 2px;
+}
+
+/* Phosphor's icon-font glyphs aren't vertically centered within their own
+   line box, so centering the button itself isn't enough — the icon needs
+   its own flex box to sit level with the text baseline. No color is set
+   here on purpose: icons are font glyphs that render in `currentColor`,
+   so they always match whatever text-color variable their container
+   uses (--theme-ink-on-card, --theme-outline, --surface-text, etc.) with
+   nothing extra to keep in sync. */
+button.btn-filled i,
+button.btn-outlined i {
+  display: flex;
+  align-items: center;
+  line-height: 1;
+}
+
+button.btn-filled {
+  background: color-mix(in srgb, var(--theme-button) 55%, transparent);
+  border: 2px solid var(--theme-outline);
+  color: var(--theme-outline);
+}
+
+/* A lighter fill (not a darker one) marks the suggested choice. */
+button.btn-filled.suggested {
+  background: color-mix(in srgb, var(--theme-button) 95%, var(--theme-outline));
+}
+
+button.btn-outlined {
+  background: transparent;
+  border: 2px solid var(--theme-outline);
+  color: var(--theme-ink-on-card);
+}
+
+.btn-large {
+  padding: var(--btn-padding-y-large) var(--btn-padding-x-large);
+  font-size: 1.05rem;
+}
+
+/* The quick-break buttons pack an icon + 3-word label into a narrow half
+   of the row; a smaller font and a flex-wrap fallback stop the text from
+   breaking mid-word onto three lines. min-height keeps clearance between
+   the centered label and the absolutely-positioned "Suggested" tag. */
+.break-btn {
+  flex-wrap: wrap;
+  font-size: 0.85rem;
+  padding: var(--break-btn-padding-y) var(--break-btn-padding-x);
+  line-height: 1.3;
+  min-height: var(--break-btn-min-height);
+}
+
+.suggested-inline {
+  position: absolute;
+  top: var(--space-2xs);
+  right: var(--space-sm);
+  font-size: 0.6rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-sm);
+  justify-content: center;
+}
+
+.controls-vertical {
+  flex-direction: column;
+  align-items: stretch;
+}
+
+.control-row {
+  display: flex;
+  gap: var(--space-sm);
+  justify-content: center;
+}
+
+.control-row button {
+  flex: 1;
+}
+
+/* --- Dialogs: native <dialog>, visible surface is the <article> inside --- */
+
+dialog {
+  border: none;
+  background: transparent;
+  padding: var(--space-lg);
+  max-width: var(--dialog-max-width);
+  width: 100%;
+}
+
+#break-due-dialog {
+  max-width: var(--break-due-dialog-max-width);
+}
+
+dialog::backdrop {
+  background: rgba(0, 0, 0, 0.5);
+}
+
+.break-dialog {
+  text-align: center;
+  padding: var(--break-dialog-padding-y) var(--break-dialog-padding-x);
+}
+
+.break-dialog h2 {
+  color: var(--theme-ink-on-card);
+  margin-bottom: var(--space-sm);
+}
+
+#break-due-dialog h2 {
+  margin-bottom: var(--break-dialog-heading-gap);
+}
+
+.break-actions {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
+  width: 100%;
+}
+
+.break-actions button {
+  width: 100%;
+}
+
+/* --- Exercise checklist --- */
+
+.exercise-picker {
+  text-align: left;
+  margin: var(--space-lg) 0 var(--space-xl);
+  max-height: 55vh;
+  overflow-y: auto;
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  align-items: stretch;
+  gap: var(--space-xs);
+}
+
+.packet-card-other {
+  grid-column: 1 / -1;
+}
+
+.exercise-picker label {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  margin: var(--space-2xs) 0;
+}
+
+.exercise-item-text {
+  display: flex;
+  flex-direction: column;
+}
+
+/* Same fix as the buttons: Pico signals focus with a box-shadow (which
+   shows as a colored ring/halo around the checkbox), not outline, so both
+   have to be reset. A minimal :focus-visible outline keeps keyboard
+   navigation visible without the mouse-click halo. */
+.exercise-picker input[type="checkbox"] {
+  outline: none;
+  box-shadow: none !important;
+}
+
+/* Fixed light background regardless of theme — the exercise cards behind
+   these checkboxes are always the same orange in light or dark mode, but
+   Pico's own default checkbox color follows the theme, so in dark mode it
+   was rendering as a near-black square that barely showed up. Only the
+   unchecked state is touched: forcing the background unconditionally
+   (checked or not) previously erased the checked-state color entirely,
+   since that's how Pico signals "checked" in the first place. */
+.exercise-picker input[type="checkbox"]:not(:checked) {
+  background-color: var(--checkbox-bg);
+  border-color: var(--checkbox-border);
+}
+
+.packet-card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2xs);
+  min-width: 0;
+  background: var(--theme-card);
+  border: 2px solid var(--theme-outline);
+  border-radius: var(--radius-button);
+  padding: var(--space-sm) var(--space-lg);
+  color: var(--theme-ink-on-card);
+}
+
+/* Pico sets its own color directly on <label>, which overrides our
+   inherited text color from .packet-card (a direct rule on an element
+   always wins over an inherited value, regardless of selector
+   specificity) — so it has to be set directly on the label too. */
+.packet-card label {
+  color: var(--theme-ink-on-card);
+}
+
+.packet-card-suggested label {
+  color: var(--theme-ink-on-card);
+}
+
+/* Checkboxes are intentionally left at Pico's own default styling. An
+   earlier attempt pinned their background to a fixed color to fix a
+   contrast issue, but Pico apparently signals the checked state via
+   background-color itself (not a separate icon layer), so forcing a
+   constant background silently broke the checkmark from ever appearing. */
+
+#other-detail-input {
+  background-color: color-mix(in srgb, var(--theme-card) 88%, var(--theme-outline));
+  color: var(--theme-ink-on-card);
+  border-color: color-mix(in srgb, var(--theme-outline) 40%, transparent);
+  flex: 1 1 auto;
+  margin: 0;
+  outline: none;
+  box-shadow: none !important;
+}
+
+#other-detail-input::placeholder {
+  color: var(--theme-ink-on-card-quiet);
+}
+
+.exercise-reps {
+  display: block;
+  font-size: 0.85em;
+  color: var(--theme-ink-on-card-quiet);
+}
+
+.packet-card-suggested {
+  background: var(--theme-button);
+  border-color: transparent;
+  padding-top: var(--space-xl);
+}
+
+.packet-card-suggested .exercise-reps {
+  color: var(--theme-ink-on-card-quiet);
+}
+
+.packet-card-label {
+  position: absolute;
+  top: var(--space-xs);
+  right: var(--space-sm);
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--theme-ink-on-card);
+}
+
+/* Chained with .packet-card (instead of relying on source order) so this
+   always wins over .packet-card's flex-direction: column regardless of
+   where either rule is declared in the file. */
+.packet-card.packet-card-other {
+  flex-direction: row;
+  align-items: center;
+  gap: var(--space-sm);
+}
+
+.packet-card-other label {
+  flex: 0 0 auto;
+  text-align: left;
+  margin: 0;
+}
+
+/* --- Dev panel --- */
+
+.side-panel {
+  position: fixed;
+  top: var(--space-xl);
+  z-index: 20;
+  background: var(--surface-bg);
+  border: 1px solid var(--surface-border);
+  border-radius: var(--radius-button);
+  box-shadow: var(--shadow-card);
+  padding: var(--space-lg);
+  min-width: 200px;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+  color: var(--surface-text);
+}
+
+.side-panel-right {
+  right: var(--space-lg);
+}
+
+#dev-speed-toggle {
+  outline: none;
+  box-shadow: none !important;
+}
+
+#dev-speed-toggle:focus-visible {
+  outline: 2px solid var(--surface-text);
+  outline-offset: 2px;
+}
+
+.side-panel-left {
+  left: var(--space-lg);
+}
+
+.side-panel-title {
+  margin: 0;
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--surface-text-quiet);
+}
