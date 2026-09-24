@@ -830,6 +830,13 @@ dialog::backdrop {
   color: var(--surface-text-quiet);
 }
 
+.settings-subtitle {
+  margin: var(--space-sm) 0 var(--space-xs);
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: var(--surface-text-quiet);
+}
+
 .settings-switch-row {
   display: flex;
   align-items: center;
