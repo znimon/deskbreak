@@ -228,7 +228,6 @@ section {
      the running screen); horizontal padding stays generous since it does
      not compete for the same limited vertical space. */
   padding: var(--space-md) var(--space-xl);
-  box-shadow: var(--shadow-card);
   /* Clips descendants (like the exercise-picker's scrollable card row) to
      the card's own rounded shape — otherwise a card widened by long
      nowrap text can render past the dialog's visible border instead of
