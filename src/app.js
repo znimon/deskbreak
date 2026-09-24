@@ -271,6 +271,7 @@ const el = {
   darkModeToggle: document.getElementById("dark-mode-toggle"),
   sessionLengthRange: document.getElementById("session-length-range"),
   sessionLengthValue: document.getElementById("session-length-value"),
+  timerSettingsHint: document.getElementById("timer-settings-hint"),
   chimeOptions: document.getElementById("chime-options"),
   developerSettingsSection: document.getElementById("developer-settings-section"),
   devSpeedToggle: document.getElementById("dev-speed-toggle"),
@@ -644,10 +645,19 @@ el.settingsCloseBtn.addEventListener("click", () => {
 el.sessionLengthRange.value = String(sessionMinutes);
 el.sessionLengthValue.textContent = `${sessionMinutes} min`;
 
+// Removes and re-adds the flash class, forcing a reflow in between, so a
+// second interaction restarts the animation instead of a no-op re-add.
+function flashTimerSettingsHint() {
+  el.timerSettingsHint.classList.remove("flash");
+  void el.timerSettingsHint.offsetWidth;
+  el.timerSettingsHint.classList.add("flash");
+}
+
 el.sessionLengthRange.addEventListener("input", (event) => {
   sessionMinutes = Number(event.target.value);
   el.sessionLengthValue.textContent = `${sessionMinutes} min`;
   localStorage.setItem(SESSION_MINUTES_STORAGE_KEY, String(sessionMinutes));
+  flashTimerSettingsHint();
 });
 
 function renderChimeOptions() {
@@ -669,6 +679,7 @@ el.chimeOptions.addEventListener("click", (event) => {
   renderChimeOptions();
   primeAudio();
   playChime();
+  flashTimerSettingsHint();
 });
 
 renderChimeOptions();

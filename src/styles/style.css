@@ -840,6 +840,10 @@ dialog::backdrop {
   cursor: pointer;
 }
 
+.settings-switch-row span {
+  color: var(--surface-text);
+}
+
 .settings-range-row {
   display: flex;
   align-items: center;
@@ -860,9 +864,25 @@ dialog::backdrop {
 }
 
 .settings-hint {
-  margin: var(--space-xs) 0 0;
+  margin: 0 0 var(--space-sm);
   font-size: 0.7rem;
   color: var(--surface-text-quiet);
+  opacity: 0;
+}
+
+.settings-hint.flash {
+  animation: settings-hint-flash 2s ease-out;
+}
+
+@keyframes settings-hint-flash {
+  0%, 50% {
+    opacity: 1;
+    color: var(--theme-accent);
+  }
+  100% {
+    opacity: 0;
+    color: var(--surface-text-quiet);
+  }
 }
 
 .chime-options {
