@@ -75,7 +75,7 @@
 
   --dialog-max-width: 420px;
   --break-due-dialog-max-width: 240px;
-  --break-dialog-padding-y: 2rem;
+  --break-dialog-padding-y: 1.25rem;
   --break-dialog-padding-x: 1rem;
   --break-dialog-heading-gap: var(--space-4xl);
 
@@ -107,6 +107,15 @@ html {
   html {
     font-size: 130%;
   }
+
+  /* --ring-size is a fixed px value, so it does not shrink along with
+     everything else that scales off the root font-size above — without
+     this it stays full-size on mobile while the text and spacing around
+     it shrink, throwing off the proportions. Scaled by the same ~74%
+     ratio (130/175) as the root font-size. */
+  :root {
+    --ring-size: 170px;
+  }
 }
 
 body {
@@ -124,7 +133,12 @@ body {
    entirely there. */
 .icon-btn {
   position: absolute;
-  top: var(--space-2xl);
+  /* Mirrors #app's mobile padding-top (--space-lg) plus the card's own
+     top padding (--space-md), the same -10px header-row centering
+     correction as the desktop override below. This was a fixed
+     --space-2xl value that never got updated through several rounds of
+     card-padding changes, drifting out of alignment with "DESKBREAK". */
+  top: calc(var(--space-lg) + var(--space-md) - 10px);
   right: var(--space-2xl);
   z-index: 20;
   width: 44px;
@@ -158,7 +172,7 @@ body {
 
 /* Desktop: stays on the right (same side as mobile), but the vertical
    inset accounts for BOTH #app's own padding AND the card's own (now
-   asymmetric — vertical padding is --space-lg, not --space-xl) top
+   asymmetric — vertical padding is --space-md, not --space-xl) top
    padding on top of that, landing the button flush with the top of the
    card's header row (where the "DESKBREAK" text sits) instead of just
    #app's padding edge. The extra -10px centers the 44px button against
@@ -167,7 +181,7 @@ body {
    lower than the text's own vertical center. */
 @media (min-width: 481px) {
   .icon-btn {
-    top: calc(var(--space-xl) + var(--space-lg) - 10px);
+    top: calc(var(--space-xl) + var(--space-md) - 10px);
     right: calc(var(--space-xl) * 2);
   }
 }
@@ -178,7 +192,7 @@ body {
 
 #app {
   position: relative;
-  max-width: 560px;
+  max-width: 680px;
   margin: 0 auto;
   padding: var(--space-xl);
 }
@@ -213,7 +227,7 @@ section {
   /* Vertical padding is tight (fits content without a forced scroll on
      the running screen); horizontal padding stays generous since it does
      not compete for the same limited vertical space. */
-  padding: var(--space-lg) var(--space-xl);
+  padding: var(--space-md) var(--space-xl);
   box-shadow: var(--shadow-card);
   /* Clips descendants (like the exercise-picker's scrollable card row) to
      the card's own rounded shape — otherwise a card widened by long
@@ -224,11 +238,11 @@ section {
 
 .theme-card-header {
   /* Bleeds out by exactly the card's own padding on each side (now
-     asymmetric: --space-lg vertically, --space-xl horizontally) so this
+     asymmetric: --space-md vertically, --space-xl horizontally) so this
      header's own border-bottom spans the full card width, then pads
      itself back in by the same amounts to restore the visual inset. */
-  padding: var(--space-lg) var(--space-xl);
-  margin: calc(var(--space-lg) * -1) calc(var(--space-xl) * -1) var(--space-lg);
+  padding: var(--space-md) var(--space-xl);
+  margin: calc(var(--space-md) * -1) calc(var(--space-xl) * -1) var(--space-md);
   border-bottom: 1px solid color-mix(in srgb, var(--theme-ink-on-card) 25%, transparent);
   text-align: left;
 }
@@ -291,7 +305,7 @@ section {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: var(--space-sm);
+  gap: var(--space-xs);
   margin-bottom: 0;
 }
 
@@ -310,6 +324,15 @@ section {
   );
 }
 
+/* Shifts the main ring up within .timer-display's own box — a transform
+   does not affect layout, so this does not change .timer-display's
+   height or move the stats/buttons below it at all. Scoped to the
+   running screen's ring specifically, not .countdown-ring-small in the
+   break dialog. */
+.timer-display .countdown-ring {
+  transform: translateY(-20px);
+}
+
 .countdown-ring::before {
   content: "";
   position: absolute;
@@ -324,7 +347,7 @@ section {
   /* Symmetric top/bottom margin, rather than just a bottom margin, so the
      ring sits visually centered in the gap between the dialog's title and
      the exercise-picker row below it, instead of hugging the title. */
-  margin: var(--space-xl) auto;
+  margin: var(--space-md) auto;
 }
 
 .countdown {
@@ -340,7 +363,7 @@ section {
 .stats {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  margin: var(--space-sm) 0;
+  margin: var(--space-xs) 0;
   text-align: left;
 }
 
@@ -375,7 +398,11 @@ button.btn-outlined {
   padding: var(--btn-padding-y) var(--btn-padding-x);
   border-radius: var(--radius-button);
   font-size: 1rem;
-  font-weight: 600;
+  font-weight: 500;
+  /* Same style as the exercise names ("Walk", "Squats") for readability
+     across the whole app, rather than plain unshadowed text on buttons
+     specifically. */
+  text-shadow: 2px 2px 0 rgba(0, 0, 0, 0.35);
   cursor: pointer;
   outline: none;
   box-shadow: var(--shadow-btn) !important;
@@ -447,12 +474,16 @@ button.btn-outlined {
   position: absolute;
   top: var(--space-2xs);
   right: var(--space-2xs);
-  padding: 0.3rem 0.3rem;
+  padding: 0.15rem 0.2rem;
   font-size: 0.55rem;
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.04em;
   line-height: 1;
+  /* Otherwise inherits the pixel-outline shadow just added to all button
+     text — this tag is small enough that the shadow reads as muddy
+     rather than crisp, so it keeps its original plain look. */
+  text-shadow: none;
   visibility: hidden;
 }
 
@@ -469,7 +500,11 @@ button.btn-outlined {
   padding-top: calc(var(--break-btn-padding-y) + var(--space-md));
   line-height: 1.3;
   min-height: var(--break-btn-min-height);
-  white-space: nowrap;
+  /* Was white-space: nowrap. That forces the browser to treat the whole
+     label as one unbreakable unit — even with min-width: 0 letting the
+     button's own box shrink, the text itself could not wrap, so it
+     rendered past the button's edge instead of onto a second line. Letting
+     it wrap is what actually keeps it inside the row on narrow screens. */
 }
 
 /* button.break-btn (element + class) matches button.btn-filled's own
@@ -516,7 +551,6 @@ button.break-btn {
   display: flex;
   flex-direction: column;
   align-items: stretch;
-  gap: var(--space-md);
 }
 
 .control-row {
@@ -599,7 +633,7 @@ dialog::backdrop {
 
 .exercise-picker {
   text-align: left;
-  margin: var(--space-lg) 0 var(--space-xl);
+  margin: var(--space-sm) 0 var(--space-md);
   display: flex;
   align-items: stretch;
   gap: var(--space-sm);
