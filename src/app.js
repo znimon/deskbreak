@@ -538,8 +538,6 @@ function render() {
   const nextSuggestedKey = durationKeyForBreakNumber(state.breakNumber + 1);
   el.quickSuggestedTag3.classList.toggle("visible", nextSuggestedKey === "3");
   el.quickSuggestedTag5.classList.toggle("visible", nextSuggestedKey === "5");
-  el.quickBreak3Btn.classList.toggle("suggested", nextSuggestedKey === "3");
-  el.quickBreak5Btn.classList.toggle("suggested", nextSuggestedKey === "5");
 
   if (state.status === "running" && state.nextBreakAt !== null) {
     const remainingMs = state.nextBreakAt - now;
@@ -570,8 +568,6 @@ function render() {
 
     el.suggestedTag3.classList.toggle("visible", suggested === "3");
     el.suggestedTag5.classList.toggle("visible", suggested === "5");
-    el.startBreak3Btn.classList.toggle("suggested", suggested === "3");
-    el.startBreak5Btn.classList.toggle("suggested", suggested === "5");
   }
 
   if (state.status === "onBreak") {
@@ -631,9 +627,9 @@ el.settingsToggleBtn.addEventListener("click", () => {
   // Explicitly hides the button while the panel is open, rather than
   // relying on z-index/stacking alone — guarantees it is actually gone
   // from the user's perspective instead of just "behind" in paint order.
-  // Mobile only (see .icon-btn.panel-open in style.css) — on desktop the
-  // panel is a small popover, not a full-screen sheet, so the button
-  // stays visible.
+  // The settings panel is a full-screen sheet on every viewport width
+  // (see .icon-btn.panel-open in style.css), so this hides the button on
+  // desktop too, not just mobile.
   el.settingsToggleBtn.classList.toggle("panel-open", isOpening);
 });
 
