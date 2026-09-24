@@ -4,10 +4,8 @@ DeskBreak is a movement timer for people who sit for most of a working session. 
 
 ## How it works
 
-- DeskBreak prompts a movement break every 30 minutes.
-- Breaks alternate between two styles:
-  - A 3-5 minute walk.
-  - A 2-3 minute walk plus optional resistance or mobility exercises.
+- DeskBreak prompts a movement break at a configurable interval (default 30 minutes, adjustable in Settings).
+- Each break offers a plain walk, or a short bundle of movements — the exercise pool and bundles are configurable in `src/exercises.yaml`.
 - A walk is always an acceptable choice for the full length of any break.
 
 ## Research
