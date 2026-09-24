@@ -5,114 +5,80 @@
 // normal operation (default speed is 1x).
 const DEV_SPEED = Math.max(1, Number(new URLSearchParams(location.search).get("speed")) || 1);
 
-// Set to false (or delete the #dev-panel block in index.html) before
-// deploying to GitHub Pages — the panel is a testing aid only.
+// Set to false (or delete the #developer-settings-section block in
+// index.html) before deploying to GitHub Pages — it's a testing aid only.
 const DEV_PANEL_ENABLED = true;
 
-const BREAK_INTERVAL_MS = (30 * 60 * 1000) / DEV_SPEED;
 const TICK_MS = 250;
 
-// Breaks are defined by their length, not a named type: a 3-minute break
-// is walk-only, a 5-minute break is walk plus optional resistance/mobility
-// movements. Which length is suggested still alternates every 30 minutes
-// (section 4 of the requirements) — the user can always pick either one.
+// Work-session length before a break is triggered, configurable from the
+// settings panel (20-55 min) and persisted across reloads.
+const SESSION_MINUTES_STORAGE_KEY = "deskbreak-session-minutes";
+const DEFAULT_SESSION_MINUTES = 30;
+const MIN_SESSION_MINUTES = 20;
+const MAX_SESSION_MINUTES = 55;
+
+function loadSessionMinutes() {
+  const stored = Number(localStorage.getItem(SESSION_MINUTES_STORAGE_KEY));
+  if (stored >= MIN_SESSION_MINUTES && stored <= MAX_SESSION_MINUTES) return stored;
+  return DEFAULT_SESSION_MINUTES;
+}
+
+let sessionMinutes = loadSessionMinutes();
+
+function getBreakIntervalMs() {
+  return (sessionMinutes * 60 * 1000) / DEV_SPEED;
+}
+
+// Break lengths in minutes double as their duration-key ("3", "5") so
+// adding another length (e.g. 10 or 15) later is just a new key here plus
+// a matching entry in exercises.yaml's breaks map — no renaming needed.
+// Which length is suggested alternates every break (section 4 of the
+// requirements) — the user can always pick either one.
 const BREAK_DURATIONS = {
-  short: (3 * 60 * 1000) / DEV_SPEED,
-  long: (5 * 60 * 1000) / DEV_SPEED,
+  3: (3 * 60 * 1000) / DEV_SPEED,
+  5: (5 * 60 * 1000) / DEV_SPEED,
 };
 
 const BREAK_LABELS = {
-  short: "3-min break",
-  long: "5-min break",
+  3: "3-min break",
+  5: "5-min break",
 };
-
-// Controls how many exercise bundles are offered and how big each one is.
-// Both durations use the same card-based bundle interface — a 3-minute
-// break just gets fewer, lighter bundles than a 5-minute break. Raising
-// bundleCount (up to the number of distinct EXERCISES available) is enough
-// to offer more bundles later; no other code needs to change.
-const BREAK_BUNDLE_CONFIG = {
-  short: {
-    totalMinutesLabel: "3 minutes",
-    bundleWalkLabel: "Walk 2 minutes",
-    bundleCount: 1,
-    exercisesPerBundle: 1,
-  },
-  long: {
-    totalMinutesLabel: "5 minutes",
-    bundleWalkLabel: "Walk 2–3 minutes",
-    bundleCount: 2,
-    exercisesPerBundle: 2,
-  },
-};
-
 
 // Evidence-backed movements have direct randomized-trial support for
 // interrupting sitting (requirements section 7). Additional movements are
 // reasonable general strength/mobility choices but must not be presented as
-// having the same level of evidence (section 8). Used on 5-minute breaks.
-const EXERCISES = [
-  { id: "squats", name: "Squats", target: "8–12 reps", category: "evidence", region: "lower", type: "strength" },
-  { id: "calf-raises", name: "Calf raises", target: "10–15 reps", category: "evidence", region: "lower", type: "strength" },
-  { id: "knee-raises", name: "Standing knee raises", target: "10–20 alternating reps", category: "evidence", region: "lower", type: "strength" },
-  { id: "glute-contractions", name: "Glute contractions", target: "10–15 reps or short holds", category: "evidence", region: "lower", type: "strength" },
-  { id: "pushups", name: "Push-ups", target: "5–10 reps", category: "additional", region: "upper", type: "strength" },
-  { id: "walkout-planks", name: "Walkout planks", target: "3–5 reps", category: "additional", region: "core", type: "strength" },
-  { id: "thoracic-rotations", name: "Thoracic rotations", target: "5 per side", category: "additional", region: "upper", type: "mobility" },
-  { id: "hip-flexor-stretch", name: "Hip-flexor stretch", target: "20–30 sec per side", category: "additional", region: "lower", type: "mobility" },
-  { id: "wall-slides", name: "Wall slides", target: "8–12 reps", category: "additional", region: "upper", type: "mobility" },
-];
+// having the same level of evidence (section 8).
+// Both the exercise pool and the named bundles offered per break length
+// are loaded from exercises.yaml — edit that file, not this one, to
+// change either. Top-level await pauses the rest of this module until
+// it's parsed, so nothing below ever sees an empty list or undefined config.
+const EXERCISE_CONFIG = await fetch("exercises.yaml")
+  .then((response) => response.text())
+  .then((yamlText) => jsyaml.load(yamlText));
+
+const EXERCISES = EXERCISE_CONFIG.exercises;
+
+// Named exercise bundles (from exercises.yaml) available per break
+// length — see buildBreakChecklist for how they're shown/picked.
+const BREAK_BUNDLE_CONFIG = EXERCISE_CONFIG.breaks;
 
 // Session-only rotation state (resets on reload; daily persistence is a
-// later feature). Tracks how often each exercise has been performed today
-// and which exercises were done on the previous 5-minute break, so
-// suggestions follow requirements section 9: prefer movements not yet done
-// today, prefer least-frequent movements, alternate upper/lower body and
-// strength/mobility, and avoid repeating the previous break's picks.
-const exerciseStats = {};
-let previousExerciseSelection = [];
+// later feature). Tracks the last bundle key shown for each break length,
+// so the suggested bundle is always the next one after it in that break
+// length's list (wrapping back to the first past the end of the list).
+const lastBundleKeyByDuration = {};
 
-function suggestExercises(count, poolOverride) {
-  const candidatePool = poolOverride || EXERCISES;
-  const previousSet = new Set(previousExerciseSelection);
-  const candidates = candidatePool.map((ex) => ({
-    ex,
-    timesToday: exerciseStats[ex.id] ? exerciseStats[ex.id].timesPerformedToday : 0,
-    repeated: previousSet.has(ex.id),
-  }));
-
-  function pickBest(pool, against) {
-    const sorted = pool.slice().sort((a, b) => {
-      if (a.timesToday !== b.timesToday) return a.timesToday - b.timesToday;
-      if (a.repeated !== b.repeated) return a.repeated ? 1 : -1;
-      if (against) {
-        const altA = (a.ex.region !== against.region ? 1 : 0) + (a.ex.type !== against.type ? 1 : 0);
-        const altB = (b.ex.region !== against.region ? 1 : 0) + (b.ex.type !== against.type ? 1 : 0);
-        if (altA !== altB) return altB - altA;
-      }
-      return Math.random() - 0.5;
-    });
-    return sorted[0];
-  }
-
-  const picks = [];
-  let pool = candidates;
-
-  const first = pickBest(pool, null);
-  picks.push(first.ex);
-  pool = pool.filter((c) => c.ex.id !== first.ex.id);
-
-  while (picks.length < count && pool.length > 0) {
-    const next = pickBest(pool, picks[picks.length - 1]);
-    picks.push(next.ex);
-    pool = pool.filter((c) => c.ex.id !== next.ex.id);
-  }
-
-  return picks;
+function nextBundleKey(durationKey, bundleKeys) {
+  const lastKey = lastBundleKeyByDuration[durationKey];
+  const lastIndex = lastKey ? bundleKeys.indexOf(lastKey) : -1;
+  const nextKey = bundleKeys[(lastIndex + 1) % bundleKeys.length];
+  lastBundleKeyByDuration[durationKey] = nextKey;
+  return nextKey;
 }
 
 function durationKeyForBreakNumber(n) {
-  return n % 2 === 1 ? "short" : "long";
+  return n % 2 === 1 ? "3" : "5";
 }
 
 function formatMMSS(ms) {
@@ -158,21 +124,36 @@ const state = {
   pauseStartedAt: null,
   pausedMsTotal: 0,
   breakNumber: 0,
-  suggestedDurationKey: "short",
+  suggestedDurationKey: "3",
   breakDurationKey: null,
   breakStartedAt: null,
   breakEndsAt: null,
   breaksCompleted: 0,
   breaksSkipped: 0,
   movementMs: 0,
-  currentChecklistSelections: new Set(),
   breakEndSoundPlayed: false,
 };
 
-// Gentle two-note chime, synthesized instead of loaded from an audio file
-// so there's nothing extra to fetch or vendor. The AudioContext is created
-// lazily on the first user gesture (starting a session), since browsers
-// block audio that isn't triggered by user interaction.
+// A few gentle chime options, synthesized instead of loaded from audio
+// files so there's nothing extra to fetch or vendor. The AudioContext is
+// created lazily on the first user gesture (starting a session or opening
+// settings), since browsers block audio that isn't triggered by user
+// interaction.
+const CHIME_STORAGE_KEY = "deskbreak-chime";
+const CHIME_PROFILES = {
+  chime: { label: "Chime", notes: [880, 1108.73] }, // A5, C#6 — soft major third
+  bell: { label: "Bell", notes: [659.25] }, // E5, single long note
+  marimba: { label: "Marimba", notes: [523.25, 659.25, 783.99] }, // C5-E5-G5 ascending
+  ping: { label: "Soft Ping", notes: [1318.51] }, // E6, quick high note
+};
+const DEFAULT_CHIME_KEY = "chime";
+
+function loadChimeKey() {
+  const stored = localStorage.getItem(CHIME_STORAGE_KEY);
+  return CHIME_PROFILES[stored] ? stored : DEFAULT_CHIME_KEY;
+}
+
+let chimeKey = loadChimeKey();
 let audioCtx = null;
 
 function primeAudio() {
@@ -187,7 +168,7 @@ function primeAudio() {
 function playChime() {
   if (!audioCtx) return;
   const startTime = audioCtx.currentTime;
-  const notes = [880, 1108.73]; // A5, C#6 — a soft major-third chime
+  const notes = CHIME_PROFILES[chimeKey].notes;
   notes.forEach((freq, i) => {
     const osc = audioCtx.createOscillator();
     const gain = audioCtx.createGain();
@@ -241,13 +222,19 @@ const el = {
   breakChecklist: document.getElementById("break-checklist"),
   endBreakBtn: document.getElementById("end-break-btn"),
   cancelBreakBtn: document.getElementById("cancel-break-btn"),
-  themeToggleBtn: document.getElementById("theme-toggle-btn"),
-  devPanel: document.getElementById("dev-panel"),
+  settingsToggleBtn: document.getElementById("settings-toggle-btn"),
+  settingsPanel: document.getElementById("settings-panel"),
+  settingsCloseBtn: document.getElementById("settings-close-btn"),
+  darkModeToggle: document.getElementById("dark-mode-toggle"),
+  sessionLengthRange: document.getElementById("session-length-range"),
+  sessionLengthValue: document.getElementById("session-length-value"),
+  chimeOptions: document.getElementById("chime-options"),
+  developerSettingsSection: document.getElementById("developer-settings-section"),
   devSpeedToggle: document.getElementById("dev-speed-toggle"),
 };
 
 if (!DEV_PANEL_ENABLED) {
-  el.devPanel.remove();
+  el.developerSettingsSection.remove();
 }
 
 const TEST_SPEED = 200;
@@ -291,8 +278,9 @@ function setDialogOpen(dialog, shouldBeOpen) {
   });
 });
 
-function checkboxItemHtml(id, label) {
-  return `<label><input type="checkbox" data-item-id="${id}" /><span class="exercise-item-text">${label}</span></label>`;
+function checkboxItemHtml(id, name, reps) {
+  const repsHtml = reps ? `<span class="exercise-reps">${reps}</span>` : "";
+  return `<label class="exercise-item"><input type="checkbox" data-item-id="${id}" /><span class="exercise-item-text"><span class="exercise-item-name">${name}</span>${repsHtml}</span></label>`;
 }
 
 // Each card is a uniform vertical list of checkable items — a walk item and
@@ -302,76 +290,51 @@ function checkboxItemHtml(id, label) {
 // the card itself gets a highlight color and the word appears once in its
 // top-right corner. At most one card on the whole screen ever carries it.
 function cardHtml(items, tag) {
-  const cardClass = tag ? "packet-card packet-card-suggested" : "packet-card";
-  const labelHtml = tag ? `<span class="packet-card-label">${tag}</span>` : "";
-  const itemsHtml = items.map((item) => checkboxItemHtml(item.id, item.label)).join("");
-  return `<div class="${cardClass}">${labelHtml}${itemsHtml}</div>`;
+  const cardClass = tag ? "exercise-card exercise-card-suggested" : "exercise-card";
+  const itemsHtml = items.map((item) => checkboxItemHtml(item.id, item.name, item.reps)).join("");
+  const cardDiv = `<div class="${cardClass}">${itemsHtml}</div>`;
+  if (!tag) return cardDiv;
+  return `<div class="exercise-card-wrap"><span class="exercise-card-label">${tag}</span>${cardDiv}</div>`;
 }
 
-function buildExerciseBundles(count, exercisesPerBundle) {
-  const bundles = [];
-  const excludeIds = new Set();
-
-  for (let i = 0; i < count; i++) {
-    const pool = EXERCISES.filter((ex) => !excludeIds.has(ex.id));
-    const bundle = suggestExercises(exercisesPerBundle, pool);
-    if (bundle.length === 0) break;
-    bundles.push(bundle);
-    bundle.forEach((ex) => excludeIds.add(ex.id));
-  }
-
-  return bundles;
+function findExercise(id) {
+  return EXERCISES.find((ex) => ex.id === id);
 }
 
+// Every bundle defined for this break length is shown (scroll right for
+// more); one is picked to be marked Suggested, preferring bundles not
+// shown recently. Walk is just an exercise id like any other — whichever
+// bundles list it are the ones that include a walk.
 function buildBreakChecklist(durationKey) {
   const config = BREAK_BUNDLE_CONFIG[durationKey];
-  const bundles = buildExerciseBundles(config.bundleCount, config.exercisesPerBundle);
+  const bundleKeys = Object.keys(config.bundles);
+  const suggestedKey = nextBundleKey(durationKey, bundleKeys);
+  // Suggested card always renders first/leftmost.
+  const orderedKeys = [suggestedKey, ...bundleKeys.filter((key) => key !== suggestedKey)];
 
-  // Only the long break's first bundle is ever tagged Suggested; the short
-  // break's single tag lives on plain walking instead. Never both at once.
-  const bundleCardsHtml = bundles
-    .map((bundle, i) =>
+  const bundleCardsHtml = orderedKeys
+    .map((key) =>
       cardHtml(
-        [
-          { id: `walk-bundle-${i}`, label: config.bundleWalkLabel },
-          ...bundle.map((ex) => ({
-            id: ex.id,
-            label: `${ex.name}<span class="exercise-reps">${ex.target}</span>`,
-          })),
-        ],
-        durationKey === "long" && i === 0 ? "Suggested" : null
+        config.bundles[key].map((id) => {
+          const ex = findExercise(id);
+          // DOM id combines the bundle key with the exercise's catalog id
+          // so checkboxes track independently even if the same exercise
+          // (e.g. a walk) appears in more than one bundle.
+          return { id: `${key}-${ex.id}`, name: ex.name, reps: ex.target };
+        }),
+        key === suggestedKey ? "Suggested" : null
       )
     )
     .join("");
 
-  const walkOnlyCardHtml = cardHtml(
-    [{ id: "walking-only", label: `Walk ${config.totalMinutesLabel}` }],
-    durationKey === "short" ? "Suggested" : null
-  );
-
-  const otherCardHtml = `<div class="packet-card packet-card-other">
-    <label><input type="checkbox" data-item-id="other" /> Other</label>
-    <input type="text" id="other-detail-input" placeholder="Custom Exercise (Optional)" />
+  const otherCardHtml = `<div class="exercise-card exercise-card-other">
+    ${checkboxItemHtml("other", "Other")}
+    <input type="text" id="other-detail-input" placeholder="Custom Exercise" />
   </div>`;
 
-  const cardsHtml =
-    durationKey === "short"
-      ? walkOnlyCardHtml + bundleCardsHtml
-      : bundleCardsHtml + walkOnlyCardHtml;
-
-  el.breakChecklist.innerHTML = `${cardsHtml}${otherCardHtml}`;
+  el.breakChecklist.innerHTML = `${bundleCardsHtml}${otherCardHtml}`;
 }
 
-el.breakChecklist.addEventListener("change", (event) => {
-  const id = event.target.dataset.itemId;
-  if (!id) return;
-
-  if (event.target.checked) {
-    state.currentChecklistSelections.add(id);
-  } else {
-    state.currentChecklistSelections.delete(id);
-  }
-});
 
 function startSession() {
   primeAudio();
@@ -379,15 +342,14 @@ function startSession() {
   state.status = "running";
   state.sessionStartedAt = now;
   state.sessionEndedAt = null;
-  state.nextBreakAt = now + BREAK_INTERVAL_MS;
+  state.nextBreakAt = now + getBreakIntervalMs();
   state.pausedMsTotal = 0;
   state.pauseStartedAt = null;
   state.breakNumber = 0;
   state.breaksCompleted = 0;
   state.breaksSkipped = 0;
   state.movementMs = 0;
-  Object.keys(exerciseStats).forEach((id) => delete exerciseStats[id]);
-  previousExerciseSelection = [];
+  Object.keys(lastBundleKeyByDuration).forEach((key) => delete lastBundleKeyByDuration[key]);
   render();
 }
 
@@ -427,7 +389,6 @@ function startBreak(durationKey) {
   state.breakEndsAt = now + BREAK_DURATIONS[durationKey];
   state.breakEndSoundPlayed = false;
   state.status = "onBreak";
-  state.currentChecklistSelections = new Set();
   buildBreakChecklist(durationKey);
   render();
 }
@@ -435,7 +396,7 @@ function startBreak(durationKey) {
 function skipBreak() {
   state.breaksSkipped += 1;
   state.breakNumber += 1;
-  state.nextBreakAt = Date.now() + BREAK_INTERVAL_MS;
+  state.nextBreakAt = Date.now() + getBreakIntervalMs();
   state.status = "running";
   render();
 }
@@ -449,7 +410,7 @@ function skipBreak() {
 // ahead so dismissing it doesn't immediately re-trigger the same prompt.
 function cancelBreak() {
   if (state.nextBreakAt === null || state.nextBreakAt <= Date.now()) {
-    state.nextBreakAt = Date.now() + BREAK_INTERVAL_MS;
+    state.nextBreakAt = Date.now() + getBreakIntervalMs();
   }
   state.status = "running";
   render();
@@ -462,19 +423,8 @@ function endBreak() {
   // high test speed would round down to 0 movement minutes.
   state.movementMs += (Date.now() - state.breakStartedAt) * DEV_SPEED;
 
-  const selectedIds = Array.from(state.currentChecklistSelections).filter((id) =>
-    EXERCISES.some((ex) => ex.id === id)
-  );
-  if (selectedIds.length > 0) {
-    selectedIds.forEach((id) => {
-      if (!exerciseStats[id]) exerciseStats[id] = { timesPerformedToday: 0 };
-      exerciseStats[id].timesPerformedToday += 1;
-    });
-    previousExerciseSelection = selectedIds;
-  }
-
   state.breakNumber += 1;
-  state.nextBreakAt = Date.now() + BREAK_INTERVAL_MS;
+  state.nextBreakAt = Date.now() + getBreakIntervalMs();
   state.status = "running";
   render();
 }
@@ -529,18 +479,18 @@ function render() {
 
   const now = Date.now();
   const nextSuggestedKey = durationKeyForBreakNumber(state.breakNumber + 1);
-  el.quickSuggestedTag3.classList.toggle("hidden", nextSuggestedKey !== "short");
-  el.quickSuggestedTag5.classList.toggle("hidden", nextSuggestedKey !== "long");
-  el.quickBreak3Btn.classList.toggle("suggested", nextSuggestedKey === "short");
-  el.quickBreak5Btn.classList.toggle("suggested", nextSuggestedKey === "long");
+  el.quickSuggestedTag3.classList.toggle("visible", nextSuggestedKey === "3");
+  el.quickSuggestedTag5.classList.toggle("visible", nextSuggestedKey === "5");
+  el.quickBreak3Btn.classList.toggle("suggested", nextSuggestedKey === "3");
+  el.quickBreak5Btn.classList.toggle("suggested", nextSuggestedKey === "5");
 
   if (state.status === "running" && state.nextBreakAt !== null) {
     const remainingMs = state.nextBreakAt - now;
     el.countdown.textContent = formatMMSS(remainingMs * DEV_SPEED);
-    el.countdownRing.style.setProperty("--percent", progressPercent(remainingMs, BREAK_INTERVAL_MS));
+    el.countdownRing.style.setProperty("--percent", progressPercent(remainingMs, getBreakIntervalMs()));
   } else if (state.status === "paused" && state.pausedRemainingMs !== null) {
     el.countdown.textContent = formatMMSS(state.pausedRemainingMs * DEV_SPEED);
-    el.countdownRing.style.setProperty("--percent", progressPercent(state.pausedRemainingMs, BREAK_INTERVAL_MS));
+    el.countdownRing.style.setProperty("--percent", progressPercent(state.pausedRemainingMs, getBreakIntervalMs()));
   }
 
   el.statElapsed.textContent = formatMMSS(currentElapsedSessionMs(now));
@@ -561,10 +511,10 @@ function render() {
   if (state.status === "breakDue") {
     const suggested = state.suggestedDurationKey;
 
-    el.suggestedTag3.classList.toggle("hidden", suggested !== "short");
-    el.suggestedTag5.classList.toggle("hidden", suggested !== "long");
-    el.startBreak3Btn.classList.toggle("suggested", suggested === "short");
-    el.startBreak5Btn.classList.toggle("suggested", suggested === "long");
+    el.suggestedTag3.classList.toggle("visible", suggested === "3");
+    el.suggestedTag5.classList.toggle("visible", suggested === "5");
+    el.startBreak3Btn.classList.toggle("suggested", suggested === "3");
+    el.startBreak5Btn.classList.toggle("suggested", suggested === "5");
   }
 
   if (state.status === "onBreak") {
@@ -591,34 +541,72 @@ function render() {
 el.startSessionBtn.addEventListener("click", startSession);
 el.pauseBtn.addEventListener("click", pauseSession);
 el.resumeBtn.addEventListener("click", resumeSession);
-el.quickBreak3Btn.addEventListener("click", () => quickStartBreak("short"));
-el.quickBreak5Btn.addEventListener("click", () => quickStartBreak("long"));
+el.quickBreak3Btn.addEventListener("click", () => quickStartBreak("3"));
+el.quickBreak5Btn.addEventListener("click", () => quickStartBreak("5"));
 el.endSessionBtn.addEventListener("click", endSession);
 el.restartBtn.addEventListener("click", startSession);
-el.startBreak3Btn.addEventListener("click", () => startBreak("short"));
-el.startBreak5Btn.addEventListener("click", () => startBreak("long"));
+el.startBreak3Btn.addEventListener("click", () => startBreak("3"));
+el.startBreak5Btn.addEventListener("click", () => startBreak("5"));
 el.skipBreakBtn.addEventListener("click", skipBreak);
 el.endBreakBtn.addEventListener("click", endBreak);
 el.cancelBreakBtn.addEventListener("click", cancelBreak);
 
 // The initial theme was already applied by the inline script in <head>
-// (before first paint); this just keeps the toggle icon in sync and lets
-// the user override it, remembering their explicit choice from then on.
+// (before first paint); this just keeps the settings switch in sync and
+// lets the user override it, remembering their explicit choice from then on.
 const THEME_STORAGE_KEY = "deskbreak-theme";
 
-function applyThemeIcon() {
-  const isDark = document.documentElement.getAttribute("data-theme") === "dark";
-  el.themeToggleBtn.querySelector("i").className = isDark ? "ph ph-sun" : "ph ph-moon";
-}
+el.darkModeToggle.checked = document.documentElement.getAttribute("data-theme") === "dark";
 
-el.themeToggleBtn.addEventListener("click", () => {
-  const next = document.documentElement.getAttribute("data-theme") === "dark" ? "light" : "dark";
+el.darkModeToggle.addEventListener("change", (event) => {
+  const next = event.target.checked ? "dark" : "light";
   document.documentElement.setAttribute("data-theme", next);
   localStorage.setItem(THEME_STORAGE_KEY, next);
-  applyThemeIcon();
 });
 
-applyThemeIcon();
+// Settings panel: work-session length and timer sound. Both persist across
+// reloads; changing the session length only affects breaks scheduled from
+// this point on (an in-progress countdown isn't retroactively rescaled).
+el.settingsToggleBtn.addEventListener("click", () => {
+  primeAudio();
+  el.settingsPanel.classList.toggle("hidden");
+});
+
+el.settingsCloseBtn.addEventListener("click", () => {
+  el.settingsPanel.classList.add("hidden");
+});
+
+el.sessionLengthRange.value = String(sessionMinutes);
+el.sessionLengthValue.textContent = `${sessionMinutes} min`;
+
+el.sessionLengthRange.addEventListener("input", (event) => {
+  sessionMinutes = Number(event.target.value);
+  el.sessionLengthValue.textContent = `${sessionMinutes} min`;
+  localStorage.setItem(SESSION_MINUTES_STORAGE_KEY, String(sessionMinutes));
+});
+
+function renderChimeOptions() {
+  el.chimeOptions.innerHTML = Object.entries(CHIME_PROFILES)
+    .map(([key, profile]) => `
+      <button type="button" class="chime-option${key === chimeKey ? " active" : ""}" data-chime-key="${key}">
+        ${profile.label}
+        <i class="ph ph-check chime-option-check${key === chimeKey ? "" : " hidden"}" aria-hidden="true"></i>
+      </button>
+    `)
+    .join("");
+}
+
+el.chimeOptions.addEventListener("click", (event) => {
+  const button = event.target.closest(".chime-option");
+  if (!button) return;
+  chimeKey = button.dataset.chimeKey;
+  localStorage.setItem(CHIME_STORAGE_KEY, chimeKey);
+  renderChimeOptions();
+  primeAudio();
+  playChime();
+});
+
+renderChimeOptions();
 
 el.startDate.textContent = new Date().toLocaleDateString("en-US", {
   month: "long",

@@ -1,34 +1,3 @@
-/* ---------------------------------------------------------------------
-   Design tokens. Everything you're likely to want to hand-tune —
-   palette, corner rounding, padding, and gaps — lives in these two
-   :root blocks. The rest of the file only ever references these
-   variables, so a change here applies everywhere that value is used.
-
-   Color: swap a different 3-color palette by editing only
-   --theme-card / --theme-button / --theme-accent. --theme-alpha and the
-   two --theme-ink-on-card values are derived support colors, not part
-   of the palette itself.
-
-   Text, icon, and border colors — every one in the app traces back to
-   one of these variables (no color literals elsewhere in this file):
-     --theme-ink-on-card / --theme-ink-on-card-quiet  text + icons on the
-       theme-colored cards and dialogs (the orange surfaces)
-     --surface-text / --surface-text-quiet            text + icons on
-       off-card surfaces (dev panel, theme toggle)
-     --theme-outline                                  every border, plus
-       filled-button text (icons never set their own color — as font
-       glyphs they render in currentColor, so they always match
-       whichever of the above their container uses)
-     --surface-border                                 borders on off-card
-       surfaces (dev panel)
-     --checkbox-border                                exercise checkbox
-       border
-
-   Everything here targets plain native HTML elements (button, dialog,
-   input) styled by Pico — no shadow DOM, no custom-element internals.
-   That's the whole reason for using Pico: normal CSS specificity and
-   cascade rules apply, with nothing hidden to fight.
-   --------------------------------------------------------------------- */
 :root {
   --theme-card: #547076;   /* card & dialog backgrounds */
   --theme-button: color-mix(in srgb, var(--theme-card) 50%, var(--theme-outline)); /* button fill: a lighter tint of the card color, no separate hue */
@@ -63,21 +32,33 @@
   --surface-text-quiet: #a9a7b3;
 }
 
-/* Spacing & sizing. A small named scale (--space-*) for generic gaps,
-   plus a few one-off named tokens for measurements that are tuned to a
-   specific component (dialog widths, ring size, radii) rather than
-   drawn from the general scale. */
+/* Spacing & sizing. --spacing-NN are the raw Carbon Design System scale
+   (https://carbondesignsystem.com/elements/spacing/overview/) — multiples
+   of 2/4/8px, expressed in rem. The semantic --space-* names below alias
+   the closest scale step, so the rest of this file (which only ever
+   references --space-*) didn't need to change to adopt the scale. */
 :root {
-  --space-2xs: 0.15rem;
-  --space-xs: 0.35rem;
-  --space-sm: 0.5rem;
-  --space-sm-md: 0.65rem;
-  --space-md: 0.85rem;
-  --space-lg: 1rem;
-  --space-xl: 1.5rem;
-  --space-2xl: 2rem;
-  --space-3xl: 3rem;
-  --space-4xl: 4rem;
+  --spacing-01: 0.125rem;
+  --spacing-02: 0.25rem;
+  --spacing-03: 0.5rem;
+  --spacing-04: 0.75rem;
+  --spacing-05: 1rem;
+  --spacing-06: 1.5rem;
+  --spacing-07: 2rem;
+  --spacing-08: 2.5rem;
+  --spacing-09: 3rem;
+  --spacing-10: 4rem;
+
+  --space-2xs: var(--spacing-01);
+  --space-xs: var(--spacing-02);
+  --space-sm: var(--spacing-03);
+  --space-sm-md: var(--spacing-04);
+  --space-md: var(--spacing-04);
+  --space-lg: var(--spacing-05);
+  --space-xl: var(--spacing-06);
+  --space-2xl: var(--spacing-07);
+  --space-3xl: var(--spacing-09);
+  --space-4xl: var(--spacing-10);
 
   --radius-card: 22px;
   --radius-button: 10px;
@@ -89,7 +70,7 @@
   --btn-padding-x-large: 1.4rem;
   --break-btn-padding-y: 0.65rem;
   --break-btn-padding-x: 0.6rem;
-  --break-btn-min-height: 3.5rem;
+  --break-btn-min-height: 4rem;
 
   --dialog-max-width: 420px;
   --break-due-dialog-max-width: 240px;
@@ -105,26 +86,32 @@
 html {
   background: var(--app-bg);
   min-height: 100%;
+  min-width: 320px;
 }
 
 body {
   margin: 0;
   min-height: 100vh;
+  min-width: 320px;
   background: var(--app-bg);
   color: var(--surface-text);
 }
 
-.theme-toggle {
-  position: fixed;
-  top: var(--space-xl);
-  left: var(--space-lg);
+/* Positioned relative to #app (not the viewport) so it lands inside the
+   current screen's card at any width — #app is centered/max-width on
+   desktop, so a viewport-relative fixed position would miss the card
+   entirely there. */
+.icon-btn {
+  position: absolute;
+  top: var(--space-2xl);
+  right: var(--space-2xl);
   z-index: 20;
   width: 44px;
   height: 44px;
   border-radius: 50%;
-  border: 1px solid var(--surface-border);
-  background: var(--surface-bg);
-  color: var(--surface-text);
+  border: none;
+  background: none;
+  color: var(--theme-outline);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -135,9 +122,24 @@ body {
   box-shadow: none !important;
 }
 
-.theme-toggle:focus-visible {
+.icon-btn:focus-visible {
   outline: 2px solid var(--theme-outline);
   outline-offset: 2px;
+}
+
+/* Desktop: stays on the right (same side as mobile), but the vertical
+   inset accounts for BOTH #app's own padding AND the card's padding on
+   top of that, landing the button flush with the top of the card's
+   header row (where the "DESKBREAK" text sits) instead of just #app's
+   padding edge. The extra -10px centers the 44px button against the
+   header row's own (much shorter, ~24px) line height, rather than just
+   matching their top edges — top-aligning left the icon visibly lower
+   than the text's own vertical center. */
+@media (min-width: 481px) {
+  .icon-btn {
+    top: calc(var(--space-xl) * 2 - 10px);
+    right: calc(var(--space-xl) * 2);
+  }
 }
 
 .hidden {
@@ -145,9 +147,24 @@ body {
 }
 
 #app {
+  position: relative;
   max-width: 560px;
   margin: 0 auto;
-  padding: var(--space-lg);
+  padding: var(--space-xl);
+}
+
+@media (max-width: 480px) {
+  #app {
+    padding-top: var(--space-lg);
+  }
+}
+
+/* Pico gives every <section> a default margin-bottom (its own block
+   spacing for prose). Our <section>s are structural (screens, settings
+   groups), not prose, and already get explicit spacing from the
+   --space-* scale, so Pico's default just adds an unaccounted-for gap. */
+section {
+  margin-bottom: 0;
 }
 
 .screen {
@@ -175,13 +192,18 @@ body {
   color: var(--theme-ink-on-card);
 }
 
-.start-card {
-  padding: var(--space-2xl);
+/* "Working Session Report" wraps to a ragged 2-line break on narrow
+   cards at the default heading size — one size step down keeps it on
+   one line without needing a shorter (less clear) string. */
+@media (max-width: 480px) {
+  .theme-card-header h2 {
+    font-size: 1.3rem;
+  }
 }
 
 .start-card-header {
   text-align: left;
-  margin-bottom: var(--space-xl);
+  margin-bottom: var(--space-lg);
 }
 
 .start-brand {
@@ -201,14 +223,14 @@ body {
 }
 
 .start-heading-sub {
-  margin: 0 0 var(--space-xl);
+  margin: 0 0 var(--space-lg);
   font-size: 1rem;
   font-weight: 500;
   color: var(--theme-ink-on-card-quiet);
 }
 
 .start-date {
-  margin: 0 0 var(--space-xl);
+  margin: 0 0 var(--space-lg);
   color: var(--theme-ink-on-card-quiet);
   font-size: 0.95rem;
 }
@@ -230,7 +252,7 @@ body {
   flex-direction: column;
   align-items: center;
   gap: var(--space-lg);
-  margin-bottom: var(--space-lg);
+  margin-bottom: var(--space-sm);
 }
 
 .countdown-ring {
@@ -275,7 +297,7 @@ body {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: var(--space-lg);
-  margin: var(--space-xl) 0;
+  margin: var(--space-lg) 0;
   text-align: left;
 }
 
@@ -360,26 +382,67 @@ button.btn-outlined {
   font-size: 1.05rem;
 }
 
-/* The quick-break buttons pack an icon + 3-word label into a narrow half
-   of the row; a smaller font and a flex-wrap fallback stop the text from
-   breaking mid-word onto three lines. min-height keeps clearance between
-   the centered label and the absolutely-positioned "Suggested" tag. */
-.break-btn {
-  flex-wrap: wrap;
-  font-size: 0.85rem;
-  padding: var(--break-btn-padding-y) var(--break-btn-padding-x);
-  line-height: 1.3;
-  min-height: var(--break-btn-min-height);
-}
-
+/* The "Suggested" tag sits absolutely positioned in the button's
+   top-right corner, as its own small padded container (not bare
+   positioned text) so its spacing is controlled independently of the
+   button's own padding. The reserved clearance for it lives on .break-btn
+   itself (below) and applies to every break button uniformly, not just
+   the suggested one — see that rule's comment for why. */
 .suggested-inline {
   position: absolute;
   top: var(--space-2xs);
-  right: var(--space-sm);
-  font-size: 0.6rem;
+  right: var(--space-2xs);
+  padding: 0.3rem 0.3rem;
+  font-size: 0.55rem;
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.04em;
+  line-height: 1;
+  visibility: hidden;
+}
+
+.suggested-inline.visible {
+  visibility: visible;
+}
+
+/* The quick-break buttons pack an icon + 3-word label into a narrow half
+   of the row; a smaller font stops the text from breaking mid-word. */
+.break-btn {
+  position: relative;
+  font-size: 0.85rem;
+  padding: var(--break-btn-padding-y) var(--break-btn-padding-x);
+  /* Reserved on every break button, not just the suggested one — the
+     "Suggested" tag is only visible on one, but both buttons need the
+     same top padding so their labels line up at the same height. */
+  padding-top: calc(var(--break-btn-padding-y) + var(--space-xl));
+  line-height: 1.3;
+  min-height: var(--break-btn-min-height);
+  white-space: nowrap;
+}
+
+/* .break-btn's reserved tag space pushes it to min-height regardless of
+   its own padding math — giving these sibling buttons (same row/stack)
+   the same floor keeps every button in these dialogs the same height,
+   rather than the break buttons standing out as taller. */
+#pause-btn,
+#resume-btn,
+#end-session-btn,
+#skip-break-btn {
+  min-height: var(--break-btn-min-height);
+}
+
+/* Below this width the icon competes with the label for very little
+   space — dropping it (rather than stacking icon-above-label) saves
+   more room and reads cleaner on a narrow screen. */
+@media (max-width: 480px) {
+  /* !important because `button.btn-filled i, button.btn-outlined i` (a
+     class + two element selectors) outranks `.break-btn i` on
+     specificity alone — without this, that unconditional rule's
+     display: flex won for every button regardless of this media query
+     actually matching. */
+  .break-btn i {
+    display: none !important;
+  }
 }
 
 .controls {
@@ -425,6 +488,12 @@ dialog::backdrop {
 .break-dialog {
   text-align: center;
   padding: var(--break-dialog-padding-y) var(--break-dialog-padding-x);
+  /* .exercise-picker scrolls its own grid, but the dialog as a whole had
+     no cap — on mobile with several exercise bundles the card could grow
+     taller than the viewport with no way to reach the action buttons
+     below it. */
+  max-height: 90vh;
+  overflow-y: auto;
 }
 
 .break-dialog h2 {
@@ -447,40 +516,71 @@ dialog::backdrop {
   width: 100%;
 }
 
-/* --- Exercise checklist --- */
+/* --- Exercise checklist ---
+   .exercise-picker is the horizontally-scrolling container; .exercise-card
+   is the individual card component. Cards are fixed-width flex items
+   (not a wrapping grid), so adding more exercises just extends the
+   scrollable row instead of growing the dialog taller. */
 
 .exercise-picker {
   text-align: left;
   margin: var(--space-lg) 0 var(--space-xl);
-  max-height: 55vh;
-  overflow-y: auto;
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  align-items: stretch;
-  gap: var(--space-xs);
-}
-
-.packet-card-other {
-  grid-column: 1 / -1;
-}
-
-.exercise-picker label {
   display: flex;
-  align-items: center;
+  align-items: stretch;
   gap: var(--space-sm);
-  margin: var(--space-2xs) 0;
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+  scroll-snap-type: x proximity;
+  /* Setting overflow-x alone implicitly makes overflow-y compute to auto
+     too (a CSS Overflow spec quirk), so the "Suggested" label positioned
+     above its card (bottom: 100%, intentionally outside the card's own
+     box) would get clipped without room to render into above it. */
+  padding-top: var(--space-lg);
+  padding-bottom: var(--space-xs);
+  scrollbar-width: none;
+  /* Fades the right edge to hint more cards are scrollable — there's no
+     touch-scroll affordance on desktop the way there is on mobile, so
+     a clipped card alone doesn't read as "scroll for more" there. */
+  -webkit-mask-image: linear-gradient(to right, black calc(100% - 32px), transparent 100%);
+  mask-image: linear-gradient(to right, black calc(100% - 32px), transparent 100%);
+}
+
+.exercise-picker::-webkit-scrollbar {
+  display: none;
+}
+
+.exercise-item {
+  display: flex;
+  align-items: flex-start;
+  padding: var(--space-2xs) 0;
 }
 
 .exercise-item-text {
   display: flex;
   flex-direction: column;
+  min-width: 0;
+}
+
+.exercise-item-name {
+  font-size: 0.85rem;
+  font-weight: 600;
+  white-space: nowrap;
+  /* Pico's base line-height (1.5) adds leading above the glyphs, which
+     visibly offsets this text below the top of the checkbox next to it. */
+  line-height: 1.1;
 }
 
 /* Same fix as the buttons: Pico signals focus with a box-shadow (which
    shows as a colored ring/halo around the checkbox), not outline, so both
    have to be reset. A minimal :focus-visible outline keeps keyboard
    navigation visible without the mouse-click halo. */
+/* Explicit, locked square — without this, a checkbox next to a label
+   that wraps to 2-3 lines (common on mobile) stretched to match the
+   label's height instead of staying square. */
 .exercise-picker input[type="checkbox"] {
+  width: 1.25rem;
+  height: 1.25rem;
+  flex-shrink: 0;
   outline: none;
   box-shadow: none !important;
 }
@@ -497,28 +597,30 @@ dialog::backdrop {
   border-color: var(--checkbox-border);
 }
 
-.packet-card {
+.exercise-card {
   position: relative;
   display: flex;
   flex-direction: column;
+  flex: 0 0 auto;
+  min-width: 220px;
+  scroll-snap-align: start;
   gap: var(--space-2xs);
-  min-width: 0;
   background: var(--theme-card);
   border: 2px solid var(--theme-outline);
   border-radius: var(--radius-button);
-  padding: var(--space-sm) var(--space-lg);
+  padding: var(--space-sm) var(--space-sm);
   color: var(--theme-ink-on-card);
 }
 
 /* Pico sets its own color directly on <label>, which overrides our
-   inherited text color from .packet-card (a direct rule on an element
+   inherited text color from .exercise-card (a direct rule on an element
    always wins over an inherited value, regardless of selector
    specificity) — so it has to be set directly on the label too. */
-.packet-card label {
+.exercise-card label {
   color: var(--theme-ink-on-card);
 }
 
-.packet-card-suggested label {
+.exercise-card-suggested label {
   color: var(--theme-ink-on-card);
 }
 
@@ -532,8 +634,11 @@ dialog::backdrop {
   background-color: color-mix(in srgb, var(--theme-card) 88%, var(--theme-outline));
   color: var(--theme-ink-on-card);
   border-color: color-mix(in srgb, var(--theme-outline) 40%, transparent);
-  flex: 1 1 auto;
+  height: auto;
   margin: 0;
+  padding: var(--space-2xs) var(--space-xs);
+  font-size: 0.85rem;
+  line-height: 1.2;
   outline: none;
   box-shadow: none !important;
 }
@@ -542,71 +647,119 @@ dialog::backdrop {
   color: var(--theme-ink-on-card-quiet);
 }
 
+/* Rep counts read as a small badge rather than plain text underneath the
+   exercise name — a bit more visual interest than a second text line. */
 .exercise-reps {
   display: block;
-  font-size: 0.85em;
+  margin-top: var(--space-2xs);
+  font-size: 0.65rem;
+  font-weight: 600;
+  white-space: nowrap;
   color: var(--theme-ink-on-card-quiet);
 }
 
-.packet-card-suggested {
+.exercise-card-suggested {
   background: var(--theme-button);
   border-color: transparent;
-  padding-top: var(--space-xl);
 }
 
-.packet-card-suggested .exercise-reps {
+.exercise-card-suggested .exercise-item-name {
+  font-size: 0.8rem;
+}
+
+.exercise-card-suggested .exercise-reps {
   color: var(--theme-ink-on-card-quiet);
 }
 
-.packet-card-label {
+/* Sits above the card (not inside it), overlaying via absolute
+   positioning so it takes zero flex height from the wrapper — the wrapper
+   ends up exactly the height of the card inside it, same as an unwrapped
+   plain card, with the label floating in the space above without
+   shrinking it. Only the suggested card gets wrapped; plain cards render
+   with no wrapper at all. */
+.exercise-card-wrap {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  flex: 0 0 auto;
+}
+
+.exercise-card-wrap .exercise-card {
+  flex: 1;
+}
+
+.exercise-card-label {
   position: absolute;
-  top: var(--space-xs);
-  right: var(--space-sm);
-  font-size: 0.7rem;
-  font-weight: 700;
+  bottom: 100%;
+  right: 0;
+  padding: 0 var(--space-2xs);
+  font-size: 0.6rem;
+  font-weight: 500;
   text-transform: uppercase;
   letter-spacing: 0.04em;
   color: var(--theme-ink-on-card);
 }
 
-/* Chained with .packet-card (instead of relying on source order) so this
-   always wins over .packet-card's flex-direction: column regardless of
-   where either rule is declared in the file. */
-.packet-card.packet-card-other {
-  flex-direction: row;
-  align-items: center;
-  gap: var(--space-sm);
+.exercise-card-other {
+  flex-direction: column;
+  align-items: stretch;
+  width: 260px;
 }
 
-.packet-card-other label {
+.exercise-card-other .exercise-item {
   flex: 0 0 auto;
-  text-align: left;
-  margin: 0;
 }
 
-/* --- Dev panel --- */
+/* --- Settings panel --- */
 
-.side-panel {
+.settings-panel {
   position: fixed;
-  top: var(--space-xl);
+  top: calc(var(--space-lg) * 2 + 44px + var(--space-sm));
+  right: var(--space-lg);
   z-index: 20;
   background: var(--surface-bg);
   border: 1px solid var(--surface-border);
   border-radius: var(--radius-button);
   box-shadow: var(--shadow-card);
   padding: var(--space-lg);
-  min-width: 200px;
+  width: min(280px, calc(100vw - 2 * var(--space-lg)));
+  max-height: calc(100vh - (var(--space-lg) * 2 + 44px + var(--space-sm)) - var(--space-lg));
+  overflow-y: auto;
   display: flex;
   flex-direction: column;
   gap: var(--space-sm);
   color: var(--surface-text);
 }
 
-.side-panel-right {
-  right: var(--space-lg);
+/* Opens from the same corner as the desktop settings button (top-right,
+   see .icon-btn's min-width: 481px override above). */
+@media (min-width: 481px) {
+  .settings-panel {
+    top: calc(var(--space-xl) * 2 + 44px + var(--space-sm));
+    right: calc(var(--space-xl) * 2);
+  }
 }
 
+/* Below this width a small floating box is cramped — a full-screen
+   takeover reads more like a native settings sheet. */
+@media (max-width: 480px) {
+  .settings-panel {
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    width: 100%;
+    height: 100%;
+    max-height: 100%;
+    border: none;
+    border-radius: 0;
+    padding: var(--space-xl) var(--space-lg) var(--space-lg);
+  }
+}
+
+#dark-mode-toggle,
 #dev-speed-toggle {
+  accent-color: var(--theme-card);
   outline: none;
   box-shadow: none !important;
 }
@@ -616,14 +769,106 @@ dialog::backdrop {
   outline-offset: 2px;
 }
 
-.side-panel-left {
-  left: var(--space-lg);
-}
-
-.side-panel-title {
+.settings-panel-title {
   margin: 0;
   font-size: 0.75rem;
   text-transform: uppercase;
   letter-spacing: 0.04em;
   color: var(--surface-text-quiet);
+}
+
+.settings-panel-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.settings-close-btn {
+  border: none;
+  background: transparent;
+  color: var(--surface-text-quiet);
+  font-size: 1.1rem;
+  line-height: 1;
+  cursor: pointer;
+  margin: 0;
+  padding: 0;
+  outline: none;
+  box-shadow: none !important;
+}
+
+/* Extra separation between sections (on top of the panel's own flex
+   gap, which alone made every gap in the panel — within a section and
+   between sections — the same size, so section boundaries didn't read
+   as distinct groups). */
+.settings-section + .settings-section {
+  margin-top: var(--space-md);
+}
+
+.settings-section-title {
+  margin: 0 0 var(--space-sm);
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--surface-text-quiet);
+}
+
+.settings-switch-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-sm);
+  font-size: 0.9rem;
+  color: var(--surface-text);
+  cursor: pointer;
+}
+
+.settings-range-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+}
+
+#session-length-range {
+  flex: 1 1 auto;
+  accent-color: var(--theme-card);
+}
+
+.settings-range-value {
+  min-width: 3.5rem;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  font-size: 0.9rem;
+  color: var(--surface-text);
+}
+
+.chime-options {
+  display: flex;
+  flex-direction: column;
+}
+
+.chime-option {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  margin: 0 0 var(--space-xs);
+  padding: var(--space-sm) var(--space-lg);
+  border: 1px solid var(--surface-border);
+  border-radius: var(--radius-button);
+  background: var(--surface-bg);
+  color: var(--surface-text);
+  font-size: 0.9rem;
+  cursor: pointer;
+  outline: none;
+  box-shadow: none !important;
+}
+
+.chime-option.active {
+  border-color: var(--theme-card);
+  background: color-mix(in srgb, var(--theme-card) 12%, var(--surface-bg));
+}
+
+.chime-option-check {
+  color: var(--theme-card);
 }
