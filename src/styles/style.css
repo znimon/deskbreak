@@ -831,7 +831,7 @@ dialog::backdrop {
 }
 
 .settings-subtitle {
-  margin: var(--space-sm) 0 var(--space-xs);
+  margin: var(--space-sm) 0 var(--space-sm);
   font-size: 0.7rem;
   font-weight: 600;
   color: var(--surface-text-quiet);
