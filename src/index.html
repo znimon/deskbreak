@@ -26,6 +26,13 @@
 
 <!-- Phosphor Icons -->
 <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/@phosphor-icons/web@2.1.1/src/regular/style.css" />
+<!-- Fill weight, used only where a solid glyph reads better against the pixel-art style (see .icon-btn) -->
+<link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/@phosphor-icons/web@2.1.1/src/fill/style.css" />
+
+<!-- VT323, a legible retro terminal/pixel font used across the app -->
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=VT323&display=swap" rel="stylesheet" />
 
 <!-- YAML parser, used to load exercises.yaml -->
 <script src="https://cdn.jsdelivr.net/npm/js-yaml@4.1.0/dist/js-yaml.min.js"></script>
@@ -37,7 +44,7 @@
 <aside id="settings-panel" class="settings-panel hidden" aria-label="Settings">
   <div class="settings-panel-header">
     <button id="settings-close-btn" class="settings-close-btn" aria-label="Close settings">
-      <i class="ph ph-x" aria-hidden="true"></i>
+      <i class="ph-fill ph-x" aria-hidden="true"></i>
     </button>
   </div>
 
@@ -76,7 +83,7 @@
 <main id="app">
 
   <button id="settings-toggle-btn" class="icon-btn" aria-label="Open settings">
-    <i class="ph ph-gear" aria-hidden="true"></i>
+    <i class="ph-fill ph-gear" aria-hidden="true"></i>
   </button>
 
   <section id="idle-screen" class="screen">
@@ -85,7 +92,6 @@
         <span class="start-brand">DeskBreak</span>
       </div>
       <h2 class="start-heading">Work Timer</h2>
-      <p class="start-heading-sub">The Smart Way</p>
       <p id="start-date" class="start-date"></p>
       <button id="start-session-btn" class="btn-filled btn-large">
         Begin Session

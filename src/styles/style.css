@@ -60,9 +60,10 @@
   --space-3xl: var(--spacing-09);
   --space-4xl: var(--spacing-10);
 
-  --radius-card: 22px;
-  --radius-button: 10px;
-  --shadow-card: 0 4px 12px rgba(0, 0, 0, 0.12);
+  --radius-card: 14px;
+  --radius-button: 8px;
+  --shadow-card: 4px 4px 0 rgba(0, 0, 0, 0.35);
+  --shadow-btn: 3px 3px 0 rgba(0, 0, 0, 0.35);
 
   --btn-padding-y: 0.65rem;
   --btn-padding-x: 1.1rem;
@@ -70,7 +71,7 @@
   --btn-padding-x-large: 1.4rem;
   --break-btn-padding-y: 0.65rem;
   --break-btn-padding-x: 0.6rem;
-  --break-btn-min-height: 4rem;
+  --break-btn-min-height: 3rem;
 
   --dialog-max-width: 420px;
   --break-due-dialog-max-width: 240px;
@@ -78,8 +79,8 @@
   --break-dialog-padding-x: 1rem;
   --break-dialog-heading-gap: var(--space-4xl);
 
-  --ring-size: 190px;
-  --ring-size-small: 160px;
+  --ring-size: 230px;
+  --ring-size-small: 200px;
   --ring-inset: 14px;
 }
 
@@ -87,6 +88,25 @@ html {
   background: var(--app-bg);
   min-height: 100%;
   min-width: 320px;
+  /* VT323's glyphs sit much smaller within their own em box than a typical
+     UI font, so the usual 100% root size reads as noticeably small even
+     though every font-size in this file is already in rem. Bumping the
+     root size is the one place that needs to compensate — everything else
+     scales from it automatically. */
+  font-size: 175%;
+}
+
+/* Desktop and mobile need different root sizes, not just different
+   layouts — 175% leaves comfortable room on a wide card, but on a narrow
+   phone viewport it makes two-up buttons ("3-min break" / "5-min break")
+   need more width than the row has, colliding into each other instead of
+   fitting, and single full-width buttons ("Begin Session", "I'm done")
+   wrap mid-phrase. Since every size in this file is already in rem, this
+   one change scales all of it back down together. */
+@media (max-width: 480px) {
+  html {
+    font-size: 130%;
+  }
 }
 
 body {
@@ -95,6 +115,7 @@ body {
   min-width: 320px;
   background: var(--app-bg);
   color: var(--surface-text);
+  font-family: "VT323", monospace;
 }
 
 /* Positioned relative to #app (not the viewport) so it lands inside the
@@ -127,26 +148,26 @@ body {
   outline-offset: 2px;
 }
 
-/* Mobile only — the settings panel is a full-screen sheet there, so the
-   button is explicitly hidden while it is open (toggled in app.js). On
-   desktop the panel is a small popover and the button stays visible. */
-@media (max-width: 480px) {
-  .icon-btn.panel-open {
-    display: none;
-  }
+/* The settings panel is always a full-screen sheet (see .settings-panel
+   below), so the toggle button is explicitly hidden while it is open on
+   every viewport width, not just mobile — relying on z-index/stacking
+   order alone previously left the icon visibly painting over the panel. */
+.icon-btn.panel-open {
+  display: none;
 }
 
 /* Desktop: stays on the right (same side as mobile), but the vertical
-   inset accounts for BOTH #app's own padding AND the card's padding on
-   top of that, landing the button flush with the top of the card's
-   header row (where the "DESKBREAK" text sits) instead of just #app's
-   padding edge. The extra -10px centers the 44px button against the
-   header row's own (much shorter, ~24px) line height, rather than just
-   matching their top edges — top-aligning left the icon visibly lower
-   than the text's own vertical center. */
+   inset accounts for BOTH #app's own padding AND the card's own (now
+   asymmetric — vertical padding is --space-lg, not --space-xl) top
+   padding on top of that, landing the button flush with the top of the
+   card's header row (where the "DESKBREAK" text sits) instead of just
+   #app's padding edge. The extra -10px centers the 44px button against
+   the header row's own (much shorter, ~24px) line height, rather than
+   just matching their top edges — top-aligning left the icon visibly
+   lower than the text's own vertical center. */
 @media (min-width: 481px) {
   .icon-btn {
-    top: calc(var(--space-xl) * 2 - 10px);
+    top: calc(var(--space-xl) + var(--space-lg) - 10px);
     right: calc(var(--space-xl) * 2);
   }
 }
@@ -183,15 +204,31 @@ section {
 /* --- Cards: plain divs, background set directly --- */
 
 .theme-card {
-  background: var(--theme-card);
+  background:
+    linear-gradient(color-mix(in srgb, var(--theme-card) 55%, transparent), color-mix(in srgb, var(--theme-card) 55%, transparent)),
+    url("../images/background.png") center / cover no-repeat,
+    var(--theme-card);
+  border: 3px solid var(--theme-outline);
   border-radius: var(--radius-card);
-  padding: var(--space-xl);
+  /* Vertical padding is tight (fits content without a forced scroll on
+     the running screen); horizontal padding stays generous since it does
+     not compete for the same limited vertical space. */
+  padding: var(--space-lg) var(--space-xl);
   box-shadow: var(--shadow-card);
+  /* Clips descendants (like the exercise-picker's scrollable card row) to
+     the card's own rounded shape — otherwise a card widened by long
+     nowrap text can render past the dialog's visible border instead of
+     staying contained within it. */
+  overflow: hidden;
 }
 
 .theme-card-header {
-  padding: var(--space-xl) var(--space-xl) var(--space-lg);
-  margin: calc(var(--space-xl) * -1) calc(var(--space-xl) * -1) var(--space-lg);
+  /* Bleeds out by exactly the card's own padding on each side (now
+     asymmetric: --space-lg vertically, --space-xl horizontally) so this
+     header's own border-bottom spans the full card width, then pads
+     itself back in by the same amounts to restore the visual inset. */
+  padding: var(--space-lg) var(--space-xl);
+  margin: calc(var(--space-lg) * -1) calc(var(--space-xl) * -1) var(--space-lg);
   border-bottom: 1px solid color-mix(in srgb, var(--theme-ink-on-card) 25%, transparent);
   text-align: left;
 }
@@ -199,6 +236,7 @@ section {
 .theme-card-header h2 {
   margin: 0.25rem 0 var(--space-sm);
   color: var(--theme-ink-on-card);
+  text-shadow: 2px 2px 0 rgba(0, 0, 0, 0.35);
 }
 
 /* "Working Session Report" wraps to a ragged 2-line break on narrow
@@ -212,7 +250,7 @@ section {
 
 .start-card-header {
   text-align: left;
-  margin-bottom: var(--space-lg);
+  margin-bottom: var(--space-sm);
 }
 
 .start-brand {
@@ -224,18 +262,11 @@ section {
 }
 
 .start-heading {
-  margin: 0 0 var(--space-sm);
-  font-size: 1.75rem;
-  font-weight: 800;
-  letter-spacing: -0.01em;
+  margin: 0 0 var(--space-3xl);
+  font-size: 1.9rem;
+  font-weight: 700;
   color: var(--theme-ink-on-card);
-}
-
-.start-heading-sub {
-  margin: 0 0 var(--space-lg);
-  font-size: 1rem;
-  font-weight: 500;
-  color: var(--theme-ink-on-card-quiet);
+  text-shadow: 2px 2px 0 rgba(0, 0, 0, 0.35);
 }
 
 .start-date {
@@ -260,8 +291,8 @@ section {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: var(--space-lg);
-  margin-bottom: var(--space-sm);
+  gap: var(--space-sm);
+  margin-bottom: 0;
 }
 
 .countdown-ring {
@@ -284,13 +315,16 @@ section {
   position: absolute;
   inset: var(--ring-inset);
   border-radius: 50%;
-  background: var(--theme-card);
+  background: color-mix(in srgb, var(--theme-card) 70%, transparent);
 }
 
 .countdown-ring-small {
   width: var(--ring-size-small);
   height: var(--ring-size-small);
-  margin: 0 auto var(--space-2xl);
+  /* Symmetric top/bottom margin, rather than just a bottom margin, so the
+     ring sits visually centered in the gap between the dialog's title and
+     the exercise-picker row below it, instead of hugging the title. */
+  margin: var(--space-xl) auto;
 }
 
 .countdown {
@@ -300,18 +334,22 @@ section {
   font-variant-numeric: tabular-nums;
   line-height: 1.1;
   color: var(--theme-ink-on-card);
+  text-shadow: 2px 2px 0 rgba(0, 0, 0, 0.35);
 }
 
 .stats {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: var(--space-lg);
-  margin: var(--space-lg) 0;
+  margin: var(--space-sm) 0;
   text-align: left;
 }
 
 .stat dt {
   font-size: 0.8rem !important;
+  /* Without this, Pico's global 1.5 line-height applies, which at this
+     font's scale adds visible empty space between the label and the
+     number below it. */
+  line-height: 1.1;
   color: var(--theme-ink-on-card-quiet);
 }
 
@@ -340,6 +378,19 @@ button.btn-outlined {
   font-weight: 600;
   cursor: pointer;
   outline: none;
+  box-shadow: var(--shadow-btn) !important;
+  /* Presses flush into its own hard shadow on click (see :active below),
+     like a physical pixel-art button — transitioning both properties
+     together keeps the press and release feeling like one motion. */
+  transition: transform 80ms ease, box-shadow 80ms ease;
+}
+
+/* Moves by exactly the shadow's own offset and drops the shadow, so the
+   button visually sits flush against the surface it was "floating" above
+   — the tactile press feedback a flat, unblurred shadow is built for. */
+button.btn-filled:active,
+button.btn-outlined:active {
+  transform: translate(3px, 3px);
   box-shadow: none !important;
 }
 
@@ -373,11 +424,6 @@ button.btn-filled {
   background: color-mix(in srgb, var(--theme-button) 55%, transparent);
   border: 2px solid var(--theme-outline);
   color: var(--theme-outline);
-}
-
-/* A lighter fill (not a darker one) marks the suggested choice. */
-button.btn-filled.suggested {
-  background: color-mix(in srgb, var(--theme-button) 95%, var(--theme-outline));
 }
 
 button.btn-outlined {
@@ -420,13 +466,18 @@ button.btn-outlined {
   position: relative;
   font-size: 0.85rem;
   padding: var(--break-btn-padding-y) var(--break-btn-padding-x);
-  /* Reserved on every break button, not just the suggested one — the
-     "Suggested" tag is only visible on one, but both buttons need the
-     same top padding so their labels line up at the same height. */
-  padding-top: calc(var(--break-btn-padding-y) + var(--space-xl));
+  padding-top: calc(var(--break-btn-padding-y) + var(--space-md));
   line-height: 1.3;
   min-height: var(--break-btn-min-height);
   white-space: nowrap;
+}
+
+/* button.break-btn (element + class) matches button.btn-filled's own
+   specificity, so this actually overrides its 0.4em gap instead of
+   losing to it — a plain .break-btn selector here has lower specificity
+   and silently has no effect. */
+button.break-btn {
+  gap: 0.2em;
 }
 
 /* .break-btn's reserved tag space pushes it to min-height regardless of
@@ -462,8 +513,10 @@ button.btn-outlined {
 }
 
 .controls-vertical {
+  display: flex;
   flex-direction: column;
   align-items: stretch;
+  gap: var(--space-md);
 }
 
 .control-row {
@@ -474,6 +527,11 @@ button.btn-outlined {
 
 .control-row button {
   flex: 1;
+  /* Flex items default to min-width: auto, which floors their size at the
+     content's own width and lets them overflow the row instead of
+     shrinking to fit once that content (button labels, at this font's
+     scale) needs more room than the row has. */
+  min-width: 0;
 }
 
 /* --- Dialogs: native <dialog>, visible surface is the <article> inside --- */
@@ -508,6 +566,14 @@ dialog::backdrop {
 .break-dialog h2 {
   color: var(--theme-ink-on-card);
   margin-bottom: var(--space-sm);
+  text-shadow: 2px 2px 0 rgba(0, 0, 0, 0.35);
+}
+
+/* Smaller than the shared .break-dialog h2 size — this dialog already has
+   a large countdown ring right below the title, so the title itself does
+   not need to compete at full heading size. */
+#break-active-title {
+  font-size: 1.2rem;
 }
 
 #break-due-dialog h2 {
@@ -561,7 +627,11 @@ dialog::backdrop {
 .exercise-item {
   display: flex;
   align-items: flex-start;
-  padding: var(--space-2xs) 0;
+  /* Pico gives every <label> its own margin-bottom by default, stacking
+     on top of .exercise-card's own gap between items and roughly doubling
+     the visible space between them — this is the only spacing that
+     should apply. */
+  margin-bottom: 0;
 }
 
 .exercise-item-text {
@@ -571,12 +641,16 @@ dialog::backdrop {
 }
 
 .exercise-item-name {
-  font-size: 0.85rem;
-  font-weight: 600;
+  font-size: 0.95rem;
+  font-weight: 500;
   white-space: nowrap;
   /* Pico's base line-height (1.5) adds leading above the glyphs, which
      visibly offsets this text below the top of the checkbox next to it. */
   line-height: 1.1;
+  /* Same pixel-outline treatment as the "3-min break" title, just lighter
+     and smaller — an experiment, easy to revert if it does not read well
+     at this size. */
+  text-shadow: 2px 2px 0 rgba(0, 0, 0, 0.35);
 }
 
 /* Same fix as the buttons: Pico signals focus with a box-shadow (which
@@ -614,7 +688,7 @@ dialog::backdrop {
   min-width: 220px;
   scroll-snap-align: start;
   gap: var(--space-2xs);
-  background: var(--theme-card);
+  background: color-mix(in srgb, var(--theme-card) 70%, transparent);
   border: 2px solid var(--theme-outline);
   border-radius: var(--radius-button);
   padding: var(--space-sm) var(--space-sm);
@@ -661,23 +735,23 @@ dialog::backdrop {
 .exercise-reps {
   display: block;
   margin-top: var(--space-2xs);
-  font-size: 0.65rem;
+  font-size: 0.85rem;
   font-weight: 600;
+  /* Without this, Pico's global 1.5 line-height applies here (unlike
+     .exercise-item-name, which already overrides it) — at this font's
+     scale that adds a lot of empty vertical space around short rep text,
+     which is what made items look far more spaced out than intended. */
+  line-height: 1.1;
   white-space: nowrap;
   color: var(--theme-ink-on-card-quiet);
 }
 
 .exercise-card-suggested {
-  /* Matches the "I'm done" button's fill: that button uses --theme-button
-     at 55% over transparent, letting the dialog's --theme-card background
-     show through underneath — mixing directly with --theme-card here
-     gives the same blended result on a card, which needs an opaque
-     background of its own rather than relying on what is behind it. */
-  background: color-mix(in srgb, var(--theme-button) 55%, var(--theme-card));
-}
-
-.exercise-card-suggested .exercise-item-name {
-  font-size: 0.8rem;
+  /* Same blend as before (matches the "I'm done" button's fill), now
+     wrapped in another 70% mix with transparent so it is semi-transparent
+     like the plain exercise cards, instead of the one opaque card in the
+     row. */
+  background: color-mix(in srgb, color-mix(in srgb, var(--theme-button) 55%, var(--theme-card)) 70%, transparent);
 }
 
 .exercise-card-suggested .exercise-reps {
@@ -725,53 +799,30 @@ dialog::backdrop {
 
 /* --- Settings panel --- */
 
+/* Always a full-screen sheet, on every viewport width. Uniform padding
+   (not extra top inset) — the close button's own row already occupies
+   the top, so matching the main card's heading inset here just pushed
+   the actual settings content down twice. */
 .settings-panel {
   position: fixed;
-  top: calc(var(--space-lg) * 2 + 44px + var(--space-sm));
-  right: var(--space-lg);
-  /* Above .icon-btn (z-index: 20) so the gear is hidden behind the panel
-     once it is open, instead of the button — being later in the DOM
-     inside #app — painting over it despite the panel visually covering
-     more of the screen. */
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
   z-index: 21;
   background: var(--surface-bg);
-  border: 1px solid var(--surface-border);
-  border-radius: var(--radius-button);
+  border: none;
+  border-radius: 0;
   box-shadow: var(--shadow-card);
   padding: var(--space-lg);
-  width: min(280px, calc(100vw - 2 * var(--space-lg)));
-  max-height: calc(100vh - (var(--space-lg) * 2 + 44px + var(--space-sm)) - var(--space-lg));
+  width: 100%;
+  height: 100%;
+  max-height: 100%;
   overflow-y: auto;
   display: flex;
   flex-direction: column;
   gap: var(--space-sm);
   color: var(--surface-text);
-}
-
-/* Opens from the same corner as the desktop settings button (top-right,
-   see .icon-btn's min-width: 481px override above). */
-@media (min-width: 481px) {
-  .settings-panel {
-    top: calc(var(--space-xl) * 2 + 44px + var(--space-sm));
-    right: calc(var(--space-xl) * 2);
-  }
-}
-
-/* Below this width a small floating box is cramped — a full-screen
-   takeover reads more like a native settings sheet. */
-@media (max-width: 480px) {
-  .settings-panel {
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    width: 100%;
-    height: 100%;
-    max-height: 100%;
-    border: none;
-    border-radius: 0;
-    padding: var(--space-xl) var(--space-lg) var(--space-lg);
-  }
 }
 
 #dark-mode-toggle,
