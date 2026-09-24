@@ -882,7 +882,7 @@ dialog::backdrop {
 
 @keyframes settings-hint-flash {
   0% {
-    color: var(--theme-accent);
+    color: #d4a017;
   }
   100% {
     color: var(--surface-text);
