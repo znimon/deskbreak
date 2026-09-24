@@ -163,10 +163,28 @@ function primeAudio() {
   if (audioCtx.state === "suspended") {
     audioCtx.resume();
   }
+  // iOS Safari specifically doesn't always treat creating/resuming a
+  // context as enough to unlock audio — it wants an actual sound started
+  // synchronously within the user gesture. A near-silent, near-instant
+  // oscillator satisfies that without being audible.
+  const unlockOsc = audioCtx.createOscillator();
+  const unlockGain = audioCtx.createGain();
+  unlockGain.gain.value = 0.0001;
+  unlockOsc.connect(unlockGain).connect(audioCtx.destination);
+  unlockOsc.start();
+  unlockOsc.stop(audioCtx.currentTime + 0.01);
 }
 
 function playChime() {
   if (!audioCtx) return;
+  // Mobile browsers commonly auto-suspend the AudioContext during the
+  // long gap between priming it (session start) and a chime actually
+  // needing to fire — e.g. after the screen locks or the tab backgrounds.
+  // Without resuming here, notes get scheduled into a suspended context
+  // and never make sound.
+  if (audioCtx.state === "suspended") {
+    audioCtx.resume();
+  }
   const startTime = audioCtx.currentTime;
   const notes = CHIME_PROFILES[chimeKey].notes;
   notes.forEach((freq, i) => {
@@ -569,11 +587,20 @@ el.darkModeToggle.addEventListener("change", (event) => {
 // this point on (an in-progress countdown isn't retroactively rescaled).
 el.settingsToggleBtn.addEventListener("click", () => {
   primeAudio();
+  const isOpening = el.settingsPanel.classList.contains("hidden");
   el.settingsPanel.classList.toggle("hidden");
+  // Explicitly hides the button while the panel is open, rather than
+  // relying on z-index/stacking alone — guarantees it's actually gone
+  // from the user's perspective instead of just "behind" in paint order.
+  // Mobile only (see .icon-btn.panel-open in style.css) — on desktop the
+  // panel is a small popover, not a full-screen sheet, so the button
+  // stays visible.
+  el.settingsToggleBtn.classList.toggle("panel-open", isOpening);
 });
 
 el.settingsCloseBtn.addEventListener("click", () => {
   el.settingsPanel.classList.add("hidden");
+  el.settingsToggleBtn.classList.remove("panel-open");
 });
 
 el.sessionLengthRange.value = String(sessionMinutes);

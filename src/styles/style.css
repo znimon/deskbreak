@@ -127,6 +127,15 @@ body {
   outline-offset: 2px;
 }
 
+/* Mobile only — the settings panel is a full-screen sheet there, so the
+   button is explicitly hidden while it's open (toggled in app.js). On
+   desktop the panel is a small popover and the button stays visible. */
+@media (max-width: 480px) {
+  .icon-btn.panel-open {
+    display: none;
+  }
+}
+
 /* Desktop: stays on the right (same side as mobile), but the vertical
    inset accounts for BOTH #app's own padding AND the card's padding on
    top of that, landing the button flush with the top of the card's
@@ -716,7 +725,11 @@ dialog::backdrop {
   position: fixed;
   top: calc(var(--space-lg) * 2 + 44px + var(--space-sm));
   right: var(--space-lg);
-  z-index: 20;
+  /* Above .icon-btn (z-index: 20) so the gear is hidden behind the panel
+     once it's open, instead of the button — being later in the DOM
+     inside #app — painting over it despite the panel visually covering
+     more of the screen. */
+  z-index: 21;
   background: var(--surface-bg);
   border: 1px solid var(--surface-border);
   border-radius: var(--radius-button);
