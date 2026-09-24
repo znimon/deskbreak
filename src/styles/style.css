@@ -861,7 +861,7 @@ dialog::backdrop {
 
 .settings-hint {
   margin: var(--space-xs) 0 0;
-  font-size: 0.75rem;
+  font-size: 0.7rem;
   color: var(--surface-text-quiet);
 }
 
