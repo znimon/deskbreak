@@ -140,6 +140,11 @@ const state = {
   sessionStartedAt: null,
   sessionEndedAt: null,
   nextBreakAt: null,
+  // Interval length actually used to schedule nextBreakAt. Kept separate from
+  // getBreakIntervalMs() so the countdown ring's fill stays locked to the
+  // schedule already in effect, even if the user drags the Work Session
+  // Length slider before the next break fires.
+  currentIntervalMs: null,
   pausedRemainingMs: null,
   pauseStartedAt: null,
   pausedMsTotal: 0,
@@ -266,6 +271,7 @@ const el = {
   darkModeToggle: document.getElementById("dark-mode-toggle"),
   sessionLengthRange: document.getElementById("session-length-range"),
   sessionLengthValue: document.getElementById("session-length-value"),
+  timerSettingsHint: document.getElementById("timer-settings-hint"),
   chimeOptions: document.getElementById("chime-options"),
   developerSettingsSection: document.getElementById("developer-settings-section"),
   devSpeedToggle: document.getElementById("dev-speed-toggle"),
@@ -380,7 +386,8 @@ function startSession() {
   state.status = "running";
   state.sessionStartedAt = now;
   state.sessionEndedAt = null;
-  state.nextBreakAt = now + getBreakIntervalMs();
+  state.currentIntervalMs = getBreakIntervalMs();
+  state.nextBreakAt = now + state.currentIntervalMs;
   state.pausedMsTotal = 0;
   state.pauseStartedAt = null;
   state.breakNumber = 0;
@@ -434,7 +441,8 @@ function startBreak(durationKey) {
 function skipBreak() {
   state.breaksSkipped += 1;
   state.breakNumber += 1;
-  state.nextBreakAt = Date.now() + getBreakIntervalMs();
+  state.currentIntervalMs = getBreakIntervalMs();
+  state.nextBreakAt = Date.now() + state.currentIntervalMs;
   state.status = "running";
   render();
 }
@@ -448,7 +456,8 @@ function skipBreak() {
 // ahead so dismissing it does not immediately re-trigger the same prompt.
 function cancelBreak() {
   if (state.nextBreakAt === null || state.nextBreakAt <= Date.now()) {
-    state.nextBreakAt = Date.now() + getBreakIntervalMs();
+    state.currentIntervalMs = getBreakIntervalMs();
+    state.nextBreakAt = Date.now() + state.currentIntervalMs;
   }
   state.status = "running";
   render();
@@ -462,7 +471,8 @@ function endBreak() {
   state.movementMs += (Date.now() - state.breakStartedAt) * DEV_SPEED;
 
   state.breakNumber += 1;
-  state.nextBreakAt = Date.now() + getBreakIntervalMs();
+  state.currentIntervalMs = getBreakIntervalMs();
+  state.nextBreakAt = Date.now() + state.currentIntervalMs;
   state.status = "running";
   render();
 }
@@ -534,10 +544,10 @@ function render() {
   if (state.status === "running" && state.nextBreakAt !== null) {
     const remainingMs = state.nextBreakAt - now;
     el.countdown.textContent = formatMMSS(remainingMs * DEV_SPEED);
-    el.countdownRing.style.setProperty("--percent", progressPercent(remainingMs, getBreakIntervalMs()));
+    el.countdownRing.style.setProperty("--percent", progressPercent(remainingMs, state.currentIntervalMs));
   } else if (state.status === "paused" && state.pausedRemainingMs !== null) {
     el.countdown.textContent = formatMMSS(state.pausedRemainingMs * DEV_SPEED);
-    el.countdownRing.style.setProperty("--percent", progressPercent(state.pausedRemainingMs, getBreakIntervalMs()));
+    el.countdownRing.style.setProperty("--percent", progressPercent(state.pausedRemainingMs, state.currentIntervalMs));
   }
 
   el.statElapsed.textContent = formatMMSS(currentElapsedSessionMs(now));
@@ -635,10 +645,19 @@ el.settingsCloseBtn.addEventListener("click", () => {
 el.sessionLengthRange.value = String(sessionMinutes);
 el.sessionLengthValue.textContent = `${sessionMinutes} min`;
 
+// Removes and re-adds the flash class, forcing a reflow in between, so a
+// second interaction restarts the animation instead of a no-op re-add.
+function flashTimerSettingsHint() {
+  el.timerSettingsHint.classList.remove("flash");
+  void el.timerSettingsHint.offsetWidth;
+  el.timerSettingsHint.classList.add("flash");
+}
+
 el.sessionLengthRange.addEventListener("input", (event) => {
   sessionMinutes = Number(event.target.value);
   el.sessionLengthValue.textContent = `${sessionMinutes} min`;
   localStorage.setItem(SESSION_MINUTES_STORAGE_KEY, String(sessionMinutes));
+  flashTimerSettingsHint();
 });
 
 function renderChimeOptions() {
@@ -660,6 +679,7 @@ el.chimeOptions.addEventListener("click", (event) => {
   renderChimeOptions();
   primeAudio();
   playChime();
+  flashTimerSettingsHint();
 });
 
 renderChimeOptions();

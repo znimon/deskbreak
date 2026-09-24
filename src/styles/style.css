@@ -786,18 +786,10 @@ dialog::backdrop {
   outline-offset: 2px;
 }
 
-.settings-panel-title {
-  margin: 0;
-  font-size: 0.75rem;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-  color: var(--surface-text-quiet);
-}
-
 .settings-panel-header {
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  justify-content: flex-end;
 }
 
 .settings-close-btn {
@@ -830,6 +822,13 @@ dialog::backdrop {
   color: var(--surface-text-quiet);
 }
 
+.settings-subtitle {
+  margin: var(--space-sm) 0 var(--space-sm);
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: var(--surface-text-quiet);
+}
+
 .settings-switch-row {
   display: flex;
   align-items: center;
@@ -838,6 +837,10 @@ dialog::backdrop {
   font-size: 0.9rem;
   color: var(--surface-text);
   cursor: pointer;
+}
+
+.settings-switch-row span {
+  color: var(--surface-text);
 }
 
 .settings-range-row {
@@ -857,6 +860,25 @@ dialog::backdrop {
   font-variant-numeric: tabular-nums;
   font-size: 0.9rem;
   color: var(--surface-text);
+}
+
+.settings-hint {
+  margin: 0 0 var(--space-md);
+  font-size: 0.7rem;
+  color: var(--surface-text-quiet);
+}
+
+.settings-hint.flash {
+  animation: settings-hint-flash 2s ease-out;
+}
+
+@keyframes settings-hint-flash {
+  0% {
+    color: #d4a017;
+  }
+  100% {
+    color: var(--surface-text-quiet);
+  }
 }
 
 .chime-options {
