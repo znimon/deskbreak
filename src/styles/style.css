@@ -863,7 +863,7 @@ dialog::backdrop {
 }
 
 .settings-hint {
-  margin: 0 0 var(--space-sm);
+  margin: 0 0 var(--space-md);
   font-size: 0.7rem;
   color: var(--surface-text-quiet);
 }
