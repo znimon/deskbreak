@@ -27,18 +27,63 @@
 <!-- Phosphor Icons -->
 <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/@phosphor-icons/web@2.1.1/src/regular/style.css" />
 
+<!-- YAML parser, used to load exercises.yaml -->
+<script src="https://cdn.jsdelivr.net/npm/js-yaml@4.1.0/dist/js-yaml.min.js"></script>
+
 <link rel="stylesheet" href="styles/style.css" />
 </head>
 <body>
 
-<button id="theme-toggle-btn" class="theme-toggle" aria-label="Toggle dark mode">
-  <i class="ph ph-moon" aria-hidden="true"></i>
-</button>
+<aside id="settings-panel" class="settings-panel hidden">
+  <div class="settings-panel-header">
+    <p class="settings-panel-title">Settings</p>
+    <button id="settings-close-btn" class="settings-close-btn" aria-label="Close settings">
+      <i class="ph ph-x" aria-hidden="true"></i>
+    </button>
+  </div>
+
+  <section class="settings-section">
+    <h3 class="settings-section-title">Appearance</h3>
+    <label class="settings-switch-row">
+      <span>Dark mode</span>
+      <input type="checkbox" id="dark-mode-toggle" role="switch" />
+    </label>
+  </section>
+
+  <section class="settings-section">
+    <h3 class="settings-section-title">Work Session Length</h3>
+    <div class="settings-range-row">
+      <input type="range" id="session-length-range" min="20" max="55" step="5" value="30" />
+      <span id="session-length-value" class="settings-range-value">30 min</span>
+    </div>
+  </section>
+
+  <section class="settings-section">
+    <h3 class="settings-section-title">Timer Sound</h3>
+    <div id="chime-options" class="chime-options"></div>
+  </section>
+
+  <!--
+    Dev-only section. Gated behind DEV_PANEL_ENABLED in app.js — set that
+    to false (or delete this section) before deploying to GitHub Pages.
+  -->
+  <section id="developer-settings-section" class="settings-section">
+    <h3 class="settings-section-title">Developer</h3>
+    <label class="settings-switch-row">
+      <span>Test speed (200x)</span>
+      <input type="checkbox" id="dev-speed-toggle" role="switch" />
+    </label>
+  </section>
+</aside>
 
 <main id="app">
 
+  <button id="settings-toggle-btn" class="icon-btn" aria-label="Open settings">
+    <i class="ph ph-gear" aria-hidden="true"></i>
+  </button>
+
   <section id="idle-screen" class="screen">
-    <div class="theme-card start-card">
+    <div class="theme-card">
       <div class="start-card-header">
         <span class="start-brand">DeskBreak</span>
       </div>
@@ -97,12 +142,12 @@
           <button id="quick-break-3-btn" class="btn-filled break-btn">
             <i class="ph ph-person-simple-walk" aria-hidden="true"></i>
             3-min break
-            <span id="quick-suggested-tag-3" class="suggested-inline hidden">Suggested</span>
+            <span id="quick-suggested-tag-3" class="suggested-inline">Suggested</span>
           </button>
           <button id="quick-break-5-btn" class="btn-filled break-btn">
             <i class="ph ph-person-simple-walk" aria-hidden="true"></i>
             5-min break
-            <span id="quick-suggested-tag-5" class="suggested-inline hidden">Suggested</span>
+            <span id="quick-suggested-tag-5" class="suggested-inline">Suggested</span>
           </button>
         </div>
         <div class="control-row">
@@ -125,7 +170,7 @@
       <div class="theme-card-body">
         <dl class="stats">
           <div class="stat">
-            <dt>Working session duration</dt>
+            <dt>Session duration</dt>
             <dd id="summary-duration">0:00</dd>
           </div>
           <div class="stat">
@@ -159,12 +204,12 @@
         <button id="start-break-3-btn" class="btn-filled break-btn">
           <i class="ph ph-person-simple-walk" aria-hidden="true"></i>
           3-min break
-          <span id="suggested-tag-3" class="suggested-inline hidden">Suggested</span>
+          <span id="suggested-tag-3" class="suggested-inline">Suggested</span>
         </button>
         <button id="start-break-5-btn" class="btn-filled break-btn">
           <i class="ph ph-person-simple-walk" aria-hidden="true"></i>
           5-min break
-          <span id="suggested-tag-5" class="suggested-inline hidden">Suggested</span>
+          <span id="suggested-tag-5" class="suggested-inline">Suggested</span>
         </button>
       </div>
       <div class="control-row">
@@ -195,18 +240,6 @@
   </article>
 </dialog>
 
-<!--
-  Dev-only panel. Gated behind DEV_PANEL_ENABLED in app.js — set that to
-  false (or delete this block) before deploying to GitHub Pages.
--->
-<aside id="dev-panel" class="side-panel side-panel-right">
-  <p class="side-panel-title">Developer panel</p>
-  <label>
-    <input type="checkbox" id="dev-speed-toggle" role="switch" />
-    Test speed (200x)
-  </label>
-</aside>
-
-<script src="app.js"></script>
+<script type="module" src="app.js"></script>
 </body>
 </html>
