@@ -36,7 +36,7 @@
    (https://carbondesignsystem.com/elements/spacing/overview/) — multiples
    of 2/4/8px, expressed in rem. The semantic --space-* names below alias
    the closest scale step, so the rest of this file (which only ever
-   references --space-*) didn't need to change to adopt the scale. */
+   references --space-*) did not need to change to adopt the scale. */
 :root {
   --spacing-01: 0.125rem;
   --spacing-02: 0.25rem;
@@ -128,7 +128,7 @@ body {
 }
 
 /* Mobile only — the settings panel is a full-screen sheet there, so the
-   button is explicitly hidden while it's open (toggled in app.js). On
+   button is explicitly hidden while it is open (toggled in app.js). On
    desktop the panel is a small popover and the button stays visible. */
 @media (max-width: 480px) {
   .icon-btn.panel-open {
@@ -323,7 +323,7 @@ section {
 }
 
 /* --- Buttons: plain <button>, styled directly (overriding Pico's own
-   default button coloring, which we don't use) --- */
+   default button coloring, which we do not use) --- */
 
 button.btn-filled,
 button.btn-outlined {
@@ -355,8 +355,8 @@ button.btn-outlined:focus-visible {
   outline-offset: 2px;
 }
 
-/* Phosphor's icon-font glyphs aren't vertically centered within their own
-   line box, so centering the button itself isn't enough — the icon needs
+/* Phosphor's icon-font glyphs are not vertically centered within their own
+   line box, so centering the button itself is not enough — the icon needs
    its own flex box to sit level with the text baseline. No color is set
    here on purpose: icons are font glyphs that render in `currentColor`,
    so they always match whatever text-color variable their container
@@ -547,9 +547,9 @@ dialog::backdrop {
   padding-top: var(--space-lg);
   padding-bottom: var(--space-xs);
   scrollbar-width: none;
-  /* Fades the right edge to hint more cards are scrollable — there's no
+  /* Fades the right edge to hint more cards are scrollable — there is no
      touch-scroll affordance on desktop the way there is on mobile, so
-     a clipped card alone doesn't read as "scroll for more" there. */
+     a clipped card alone does not read as "scroll for more" there. */
   -webkit-mask-image: linear-gradient(to right, black calc(100% - 32px), transparent 100%);
   mask-image: linear-gradient(to right, black calc(100% - 32px), transparent 100%);
 }
@@ -600,7 +600,7 @@ dialog::backdrop {
    was rendering as a near-black square that barely showed up. Only the
    unchecked state is touched: forcing the background unconditionally
    (checked or not) previously erased the checked-state color entirely,
-   since that's how Pico signals "checked" in the first place. */
+   since that is how Pico signals "checked" in the first place. */
 .exercise-picker input[type="checkbox"]:not(:checked) {
   background-color: var(--checkbox-bg);
   border-color: var(--checkbox-border);
@@ -668,8 +668,12 @@ dialog::backdrop {
 }
 
 .exercise-card-suggested {
-  background: var(--theme-button);
-  border-color: transparent;
+  /* Matches the "I'm done" button's fill: that button uses --theme-button
+     at 55% over transparent, letting the dialog's --theme-card background
+     show through underneath — mixing directly with --theme-card here
+     gives the same blended result on a card, which needs an opaque
+     background of its own rather than relying on what is behind it. */
+  background: color-mix(in srgb, var(--theme-button) 55%, var(--theme-card));
 }
 
 .exercise-card-suggested .exercise-item-name {
@@ -726,7 +730,7 @@ dialog::backdrop {
   top: calc(var(--space-lg) * 2 + 44px + var(--space-sm));
   right: var(--space-lg);
   /* Above .icon-btn (z-index: 20) so the gear is hidden behind the panel
-     once it's open, instead of the button — being later in the DOM
+     once it is open, instead of the button — being later in the DOM
      inside #app — painting over it despite the panel visually covering
      more of the screen. */
   z-index: 21;
@@ -811,7 +815,7 @@ dialog::backdrop {
 
 /* Extra separation between sections (on top of the panel's own flex
    gap, which alone made every gap in the panel — within a section and
-   between sections — the same size, so section boundaries didn't read
+   between sections — the same size, so section boundaries did not read
    as distinct groups). */
 .settings-section + .settings-section {
   margin-top: var(--space-md);

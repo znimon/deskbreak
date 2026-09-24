@@ -5,9 +5,12 @@
 // normal operation (default speed is 1x).
 const DEV_SPEED = Math.max(1, Number(new URLSearchParams(location.search).get("speed")) || 1);
 
-// Set to false (or delete the #developer-settings-section block in
-// index.html) before deploying to GitHub Pages — it's a testing aid only.
-const DEV_PANEL_ENABLED = true;
+// Enabled automatically for local development (file://, localhost, or a
+// local static server) and disabled everywhere else. This is not a hand
+// toggle to remember before each deploy — the developer panel cannot
+// ship to real users regardless of this file's state at deploy time.
+const DEV_HOSTNAMES = ["", "localhost", "127.0.0.1"];
+const DEV_PANEL_ENABLED = DEV_HOSTNAMES.includes(location.hostname);
 
 const TICK_MS = 250;
 
@@ -52,18 +55,35 @@ const BREAK_LABELS = {
 // Both the exercise pool and the named bundles offered per break length
 // are loaded from exercises.yaml — edit that file, not this one, to
 // change either. Top-level await pauses the rest of this module until
-// it's parsed, so nothing below ever sees an empty list or undefined config.
-const EXERCISE_CONFIG = await fetch("exercises.yaml")
-  .then((response) => response.text())
-  .then((yamlText) => jsyaml.load(yamlText));
+// it is parsed, so nothing below ever sees an empty list or undefined
+// config. A failed fetch or parse (offline, a 404, a blocked CDN script)
+// would otherwise leave every button on the page silently dead with no
+// visible error, since none of the event listeners further down this
+// file would ever get registered — so this shows a plain, unstyled
+// message and stops the rest of the module from running instead.
+let EXERCISE_CONFIG;
+try {
+  const yamlText = await fetch("exercises.yaml").then((response) => {
+    if (!response.ok) throw new Error(`exercises.yaml request failed: ${response.status}`);
+    return response.text();
+  });
+  EXERCISE_CONFIG = jsyaml.load(yamlText);
+} catch (error) {
+  document.body.innerHTML =
+    '<p style="padding: 2rem; font: 1rem sans-serif; color: #17161f;">' +
+    "DeskBreak could not load its exercise configuration and cannot start. " +
+    "Reload the page, and check your connection if the problem continues." +
+    "</p>";
+  throw error;
+}
 
 const EXERCISES = EXERCISE_CONFIG.exercises;
 
 // Named exercise bundles (from exercises.yaml) available per break
-// length — see buildBreakChecklist for how they're shown/picked.
+// length — see buildBreakChecklist for how they are shown and picked.
 const BREAK_BUNDLE_CONFIG = EXERCISE_CONFIG.breaks;
 
-// Session-only rotation state (resets on reload; daily persistence is a
+// Session-only rotation state. It resets on reload (daily persistence is a
 // later feature). Tracks the last bundle key shown for each break length,
 // so the suggested bundle is always the next one after it in that break
 // length's list (wrapping back to the first past the end of the list).
@@ -107,7 +127,7 @@ function formatFullTimestamp(ms) {
     .toLocaleTimeString("en-US", { timeZoneName: "short" })
     .split(" ")
     .pop();
-  const tzAbbrev = tzName.replace(/^([A-Z])[SD]T$/, "$1T");
+  const tzAbbrev = tzName.replace(/^([A-Z]+)[SD]T$/, "$1T");
   return `${weekday}, ${month} ${date.getDate()} at ${time} (${tzAbbrev})`;
 }
 
@@ -135,9 +155,9 @@ const state = {
 };
 
 // A few gentle chime options, synthesized instead of loaded from audio
-// files so there's nothing extra to fetch or vendor. The AudioContext is
+// files so there is nothing extra to fetch or vendor. The AudioContext is
 // created lazily on the first user gesture (starting a session or opening
-// settings), since browsers block audio that isn't triggered by user
+// settings), since browsers block audio that is not triggered by user
 // interaction.
 const CHIME_STORAGE_KEY = "deskbreak-chime";
 const CHIME_PROFILES = {
@@ -163,7 +183,7 @@ function primeAudio() {
   if (audioCtx.state === "suspended") {
     audioCtx.resume();
   }
-  // iOS Safari specifically doesn't always treat creating/resuming a
+  // iOS Safari specifically does not always treat creating/resuming a
   // context as enough to unlock audio — it wants an actual sound started
   // synchronously within the user gesture. A near-silent, near-instant
   // oscillator satisfies that without being audible.
@@ -275,8 +295,8 @@ el.devSpeedToggle.addEventListener("change", (event) => {
 // guessing a component's custom event names. We let the browser's default
 // close action proceed and just sync our own state to match. A click that
 // lands on the <dialog> element itself (not the <article> surface inside
-// it) is a backdrop click, which native dialogs don't close on by default,
-// so it's wired up explicitly for the same cancel behavior.
+// it) is a backdrop click, which native dialogs do not close on by default,
+// so it is wired up explicitly for the same cancel behavior.
 function setDialogOpen(dialog, shouldBeOpen) {
   if (shouldBeOpen && !dialog.open) {
     dialog.showModal();
@@ -304,7 +324,7 @@ function checkboxItemHtml(id, name, reps) {
 // Each card is a uniform vertical list of checkable items — a walk item and
 // any movements that go with it are all just items in the same list, none
 // of them treated specially. The "Suggested" label belongs to the card as a
-// whole (it's the bundle that's suggested, not any one exercise in it), so
+// whole (it is the bundle that is suggested, not any one exercise in it), so
 // the card itself gets a highlight color and the word appears once in its
 // top-right corner. At most one card on the whole screen ever carries it.
 function cardHtml(items, tag) {
@@ -320,7 +340,7 @@ function findExercise(id) {
 }
 
 // Every bundle defined for this break length is shown (scroll right for
-// more); one is picked to be marked Suggested, preferring bundles not
+// more). One is picked to be marked Suggested, preferring bundles not
 // shown recently. Walk is just an exercise id like any other — whichever
 // bundles list it are the ones that include a walk.
 function buildBreakChecklist(durationKey) {
@@ -422,10 +442,10 @@ function skipBreak() {
 // Cancelling a break (via the dialog's X button or the Cancel button) does
 // not count as completed or skipped — it undoes opening the break screen.
 // If the break was started manually while the schedule was still pending
-// (nextBreakAt in the future), that schedule is left untouched, so it's as
+// (nextBreakAt in the future), that schedule is left untouched, so it is as
 // if the break was never opened. If it came from the automatic due prompt
 // (nextBreakAt already in the past), the schedule is pushed one interval
-// ahead so dismissing it doesn't immediately re-trigger the same prompt.
+// ahead so dismissing it does not immediately re-trigger the same prompt.
 function cancelBreak() {
   if (state.nextBreakAt === null || state.nextBreakAt <= Date.now()) {
     state.nextBreakAt = Date.now() + getBreakIntervalMs();
@@ -448,6 +468,15 @@ function endBreak() {
 }
 
 function endSession() {
+  // Folds a still-open pause into pausedMsTotal before computing the
+  // summary duration below — without this, ending a session while paused
+  // (without resuming first) overstated the reported duration by however
+  // long that pause had lasted, since pausedMsTotal otherwise only gets
+  // updated inside resumeSession().
+  if (state.status === "paused" && state.pauseStartedAt) {
+    state.pausedMsTotal += Date.now() - state.pauseStartedAt;
+    state.pauseStartedAt = null;
+  }
   state.sessionEndedAt = Date.now();
   state.status = "ended";
   render();
@@ -570,7 +599,7 @@ el.endBreakBtn.addEventListener("click", endBreak);
 el.cancelBreakBtn.addEventListener("click", cancelBreak);
 
 // The initial theme was already applied by the inline script in <head>
-// (before first paint); this just keeps the settings switch in sync and
+// (before first paint). This just keeps the settings switch in sync and
 // lets the user override it, remembering their explicit choice from then on.
 const THEME_STORAGE_KEY = "deskbreak-theme";
 
@@ -583,14 +612,14 @@ el.darkModeToggle.addEventListener("change", (event) => {
 });
 
 // Settings panel: work-session length and timer sound. Both persist across
-// reloads; changing the session length only affects breaks scheduled from
-// this point on (an in-progress countdown isn't retroactively rescaled).
+// reloads. Changing the session length only affects breaks scheduled from
+// this point on (an in-progress countdown is not retroactively rescaled).
 el.settingsToggleBtn.addEventListener("click", () => {
   primeAudio();
   const isOpening = el.settingsPanel.classList.contains("hidden");
   el.settingsPanel.classList.toggle("hidden");
   // Explicitly hides the button while the panel is open, rather than
-  // relying on z-index/stacking alone — guarantees it's actually gone
+  // relying on z-index/stacking alone — guarantees it is actually gone
   // from the user's perspective instead of just "behind" in paint order.
   // Mobile only (see .icon-btn.panel-open in style.css) — on desktop the
   // panel is a small popover, not a full-screen sheet, so the button
