@@ -859,6 +859,12 @@ dialog::backdrop {
   color: var(--surface-text);
 }
 
+.settings-hint {
+  margin: var(--space-xs) 0 0;
+  font-size: 0.75rem;
+  color: var(--surface-text-quiet);
+}
+
 .chime-options {
   display: flex;
   flex-direction: column;
