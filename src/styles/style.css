@@ -866,8 +866,7 @@ dialog::backdrop {
 .settings-hint {
   margin: 0 0 var(--space-sm);
   font-size: 0.7rem;
-  color: var(--surface-text-quiet);
-  opacity: 0;
+  color: var(--surface-text);
 }
 
 .settings-hint.flash {
@@ -875,13 +874,11 @@ dialog::backdrop {
 }
 
 @keyframes settings-hint-flash {
-  0%, 50% {
-    opacity: 1;
+  0% {
     color: var(--theme-accent);
   }
   100% {
-    opacity: 0;
-    color: var(--surface-text-quiet);
+    color: var(--surface-text);
   }
 }
 
