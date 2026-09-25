@@ -197,7 +197,7 @@ section {
 .theme-card {
   background:
     linear-gradient(color-mix(in srgb, var(--theme-card) 55%, transparent), color-mix(in srgb, var(--theme-card) 55%, transparent)),
-    url("../images/background.png") center / cover no-repeat,
+    url("https://res.cloudinary.com/de8dxxflb/image/upload/v1790345960/background_wz66xu.png") center / cover no-repeat,
     var(--theme-card);
   border: 3px solid var(--theme-outline);
   border-radius: var(--radius-card);
