@@ -79,6 +79,11 @@
   --break-dialog-padding-x: 1rem;
   --break-dialog-heading-gap: var(--space-4xl);
 
+  /* The settings panel is a full-width sheet, but its own controls
+     (chime option buttons, the work-interval slider) should not stretch
+     to match it on wide viewports. */
+  --settings-control-max-width: 400px;
+
   --ring-size: 230px;
   --ring-size-small: 200px;
   --ring-inset: 14px;
@@ -1022,6 +1027,7 @@ dialog[open]::backdrop {
    as distinct groups). */
 .settings-section + .settings-section {
   margin-top: var(--space-md);
+  max-width: 600px;
 }
 
 .settings-section-title {
@@ -1062,6 +1068,7 @@ dialog[open]::backdrop {
 
 #session-length-range {
   flex: 1 1 auto;
+  max-width: var(--settings-control-max-width);
   accent-color: var(--theme-card);
 }
 
@@ -1102,6 +1109,7 @@ dialog[open]::backdrop {
   align-items: center;
   justify-content: space-between;
   width: 100%;
+  max-width: var(--settings-control-max-width);
   margin: 0 0 var(--space-xs);
   padding: var(--space-sm) var(--space-lg);
   border: 1px solid var(--surface-border);
