@@ -165,7 +165,7 @@ body {
 }
 
 .icon-btn:hover {
-  transform: scale(1.12);
+  transform: rotate(20deg);
   opacity: 0.8;
 }
 
@@ -463,7 +463,7 @@ button.btn-outlined {
    a press while hovering still wins on specificity-tied source order. */
 button.btn-filled:hover,
 button.btn-outlined:hover {
-  transform: scale(1.03);
+  transform: scale(1.015);
 }
 
 /* Moves by exactly the shadow's own offset and drops the shadow, so the
