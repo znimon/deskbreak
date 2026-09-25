@@ -127,6 +127,19 @@ body {
   font-family: "VT323", monospace;
 }
 
+/* Collapses every animation/transition in the file (existing ones, like
+   the button press, and the new interaction ones) to effectively
+   instant for anyone who has asked their OS to reduce motion. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+  }
+}
+
 /* A real flex sibling of the "DeskBreak" brand span inside
    .start-card-header (see below), not an absolutely-positioned overlay —
    that previously needed a hand-tuned pixel offset to line up with the
@@ -148,6 +161,16 @@ body {
   outline: none;
   box-shadow: none !important;
   flex-shrink: 0;
+  transition: transform 150ms ease, opacity 150ms ease;
+}
+
+.icon-btn:hover {
+  transform: rotate(20deg);
+  opacity: 0.8;
+}
+
+.icon-btn:active {
+  transform: scale(0.95);
 }
 
 .icon-btn:focus-visible {
@@ -190,6 +213,30 @@ section {
 
 .screen {
   text-align: center;
+}
+
+/* Every screen switch (idle -> running -> ended, and back to idle on
+   restart) is a plain .hidden toggle, so there is no display transition
+   to hook into — this replays a short fade + scale + rise from scratch
+   each time the element starts rendering again. The consistent upward
+   direction across every switch (not just this one) is what reads as an
+   intentional transition rather than an instant swap. Kept short (see
+   .screen:not(.hidden) below) since this fires right after pressing a
+   button (Begin Session, I'm done, etc.) — a slow version of this reads
+   as lag, not polish. */
+@keyframes screen-enter {
+  from {
+    opacity: 0;
+    transform: scale(0.99) translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+.screen:not(.hidden) {
+  animation: screen-enter 180ms ease-out;
 }
 
 /* --- Cards: plain divs, background set directly --- */
@@ -299,6 +346,17 @@ section {
   margin-bottom: 0;
 }
 
+/* Registers --percent as a real animatable number — plain custom
+   properties are untyped, so a transition on one otherwise jumps
+   instantly instead of interpolating. This is what turns the ring's
+   per-tick (TICK_MS, 250ms) JS updates into a smooth sweep instead of a
+   visible step every quarter second. */
+@property --percent {
+  syntax: "<number>";
+  inherits: true;
+  initial-value: 0;
+}
+
 .countdown-ring {
   --percent: 0;
   position: relative;
@@ -312,6 +370,7 @@ section {
     var(--theme-accent) calc(var(--percent) * 1%),
     rgba(255, 247, 234, 0.25) calc(var(--percent) * 1%)
   );
+  transition: --percent 240ms linear;
 }
 
 /* Shifts the main ring up within .timer-display's own box — a transform
@@ -399,7 +458,18 @@ button.btn-outlined {
   /* Presses flush into its own hard shadow on click (see :active below),
      like a physical pixel-art button — transitioning both properties
      together keeps the press and release feeling like one motion. */
-  transition: transform 80ms ease, box-shadow 80ms ease;
+  transition: transform 80ms ease, box-shadow 80ms ease, filter 150ms ease;
+}
+
+/* Brightens on hover instead of scaling — scale moved the button's hard,
+   unblurred text-shadow by a fractional pixel amount, which text (with
+   crisp multi-glyph edges) visibly re-snapped on, while the icon glyph
+   and the "Suggested" tag (text-shadow: none) did not — a genuine
+   scale + hard-shadow rendering artifact, not fixable by tuning the
+   scale amount. Brightness touches no geometry, so nothing can shift. */
+button.btn-filled:hover,
+button.btn-outlined:hover {
+  filter: brightness(1.12);
 }
 
 /* Moves by exactly the shadow's own offset and drops the shadow, so the
@@ -566,6 +636,32 @@ dialog {
   padding: var(--space-lg);
   max-width: var(--dialog-max-width);
   width: 100%;
+  /* Fades and scales in from showModal(), and back out on close().
+     `allow-discrete` is what lets a transition run at all across the
+     display:none <-> block flip a native dialog's [open] does — without
+     it the browser skips straight to the end state. This base rule is
+     the "closed" target for that flip (see dialog[open] below) — without
+     an explicit closed-state opacity/transform to animate toward, close()
+     had nothing to transition, so allow-discrete just held the dialog
+     fully visible for the whole 200ms before snapping away: a dead-feeling
+     delay on every Done/Cancel/Skip click. Browsers without
+     @starting-style support (below) just show/hide the dialog instantly,
+     same as before any of this was added. */
+  opacity: 0;
+  transform: scale(0.94);
+  transition: opacity 200ms ease, transform 200ms ease, display 200ms allow-discrete, overlay 200ms allow-discrete;
+}
+
+dialog[open] {
+  opacity: 1;
+  transform: scale(1);
+}
+
+@starting-style {
+  dialog[open] {
+    opacity: 0;
+    transform: scale(0.94);
+  }
 }
 
 #break-due-dialog {
@@ -573,7 +669,18 @@ dialog {
 }
 
 dialog::backdrop {
-  background: rgba(0, 0, 0, 0.5);
+  background-color: transparent;
+  transition: background-color 200ms ease, display 200ms allow-discrete, overlay 200ms allow-discrete;
+}
+
+dialog[open]::backdrop {
+  background-color: rgba(0, 0, 0, 0.5);
+}
+
+@starting-style {
+  dialog[open]::backdrop {
+    background-color: transparent;
+  }
 }
 
 .break-dialog {
@@ -849,6 +956,25 @@ dialog::backdrop {
   color: var(--surface-text);
 }
 
+/* Fades and scales up from the bottom on open, the same directional
+   language as .screen entrances above — closing stays instant (a plain
+   .hidden toggle) since the panel is gone from the DOM's rendered flow
+   at that point anyway. */
+@keyframes settings-panel-enter {
+  from {
+    opacity: 0;
+    transform: scale(0.98) translateY(16px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+.settings-panel:not(.hidden) {
+  animation: settings-panel-enter 260ms ease-out;
+}
+
 #dark-mode-toggle,
 #dev-speed-toggle {
   accent-color: var(--theme-card);
@@ -878,6 +1004,16 @@ dialog::backdrop {
   padding: 0;
   outline: none;
   box-shadow: none !important;
+  transition: transform 150ms ease, color 150ms ease;
+}
+
+.settings-close-btn:hover {
+  color: var(--surface-text);
+  transform: scale(1.12);
+}
+
+.settings-close-btn:active {
+  transform: scale(0.95);
 }
 
 /* Extra separation between sections (on top of the panel's own flex
