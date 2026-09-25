@@ -82,14 +82,13 @@
 
 <main id="app">
 
-  <button id="settings-toggle-btn" class="icon-btn" aria-label="Open settings">
-    <i class="ph-fill ph-gear" aria-hidden="true"></i>
-  </button>
-
   <section id="idle-screen" class="screen">
     <div class="theme-card">
       <div class="start-card-header">
         <span class="start-brand">DeskBreak</span>
+        <button class="icon-btn settings-toggle-btn" aria-label="Open settings">
+          <i class="ph-fill ph-gear" aria-hidden="true"></i>
+        </button>
       </div>
       <h2 class="start-heading">Work Timer</h2>
       <p id="start-date" class="start-date"></p>
@@ -104,6 +103,9 @@
     <div class="theme-card running-card">
       <div class="start-card-header">
         <span class="start-brand">DeskBreak</span>
+        <button class="icon-btn settings-toggle-btn" aria-label="Open settings">
+          <i class="ph-fill ph-gear" aria-hidden="true"></i>
+        </button>
       </div>
       <div class="timer-display">
         <div id="countdown-ring" class="countdown-ring">
@@ -166,7 +168,12 @@
   <section id="ended-screen" class="screen hidden">
     <div class="theme-card">
       <div class="theme-card-header">
-        <span class="start-brand">DeskBreak</span>
+        <div class="start-card-header">
+          <span class="start-brand">DeskBreak</span>
+          <button class="icon-btn settings-toggle-btn" aria-label="Open settings">
+            <i class="ph-fill ph-gear" aria-hidden="true"></i>
+          </button>
+        </div>
         <h2>Working Session Report</h2>
         <p id="summary-start-timestamp" class="summary-start-timestamp"></p>
       </div>

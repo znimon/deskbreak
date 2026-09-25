@@ -127,20 +127,12 @@ body {
   font-family: "VT323", monospace;
 }
 
-/* Positioned relative to #app (not the viewport) so it lands inside the
-   current screen's card at any width — #app is centered/max-width on
-   desktop, so a viewport-relative fixed position would miss the card
-   entirely there. */
+/* A real flex sibling of the "DeskBreak" brand span inside
+   .start-card-header (see below), not an absolutely-positioned overlay —
+   that previously needed a hand-tuned pixel offset to line up with the
+   brand text, which drifted out of alignment every time card padding or
+   fonts changed. Flex alignment can't drift. */
 .icon-btn {
-  position: absolute;
-  /* Mirrors #app's mobile padding-top (--space-lg) plus the card's own
-     top padding (--space-md), the same -10px header-row centering
-     correction as the desktop override below. This was a fixed
-     --space-2xl value that never got updated through several rounds of
-     card-padding changes, drifting out of alignment with "DESKBREAK". */
-  top: calc(var(--space-lg) + var(--space-md) - 10px);
-  right: var(--space-2xl);
-  z-index: 20;
   width: 44px;
   height: 44px;
   border-radius: 50%;
@@ -155,6 +147,7 @@ body {
   padding: 0;
   outline: none;
   box-shadow: none !important;
+  flex-shrink: 0;
 }
 
 .icon-btn:focus-visible {
@@ -168,22 +161,6 @@ body {
    order alone previously left the icon visibly painting over the panel. */
 .icon-btn.panel-open {
   display: none;
-}
-
-/* Desktop: stays on the right (same side as mobile), but the vertical
-   inset accounts for BOTH #app's own padding AND the card's own (now
-   asymmetric — vertical padding is --space-md, not --space-xl) top
-   padding on top of that, landing the button flush with the top of the
-   card's header row (where the "DESKBREAK" text sits) instead of just
-   #app's padding edge. The extra -10px centers the 44px button against
-   the header row's own (much shorter, ~24px) line height, rather than
-   just matching their top edges — top-aligning left the icon visibly
-   lower than the text's own vertical center. */
-@media (min-width: 481px) {
-  .icon-btn {
-    top: calc(var(--space-xl) + var(--space-md) - 10px);
-    right: calc(var(--space-xl) * 2);
-  }
 }
 
 .hidden {
@@ -261,8 +238,14 @@ section {
   }
 }
 
+/* Row containing the "DeskBreak" brand span and the settings gear button
+   as real flex siblings — reused (nested one level inside
+   .theme-card-header) wherever the header needs more than just the brand
+   row, e.g. the "Working Session Report" heading and timestamp below it. */
 .start-card-header {
-  text-align: left;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
   margin-bottom: var(--space-sm);
 }
 
@@ -275,7 +258,7 @@ section {
 }
 
 .start-heading {
-  margin: 0 0 var(--space-3xl);
+  margin: 0 0 var(--space-md);
   font-size: 1.9rem;
   font-weight: 700;
   color: var(--theme-ink-on-card);
@@ -283,9 +266,17 @@ section {
 }
 
 .start-date {
-  margin: 0 0 var(--space-lg);
+  margin: 0 0 6rem;
   color: var(--theme-ink-on-card-quiet);
   font-size: 0.95rem;
+}
+
+/* Extra vertical breathing room so the idle card reads taller than a
+   tightly-packed one, without affecting the running/settings cards that
+   share .theme-card. */
+#idle-screen .theme-card {
+  padding-top: var(--space-2xl);
+  padding-bottom: var(--space-3xl);
 }
 
 #start-session-btn {
