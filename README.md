@@ -19,6 +19,14 @@ Short activity breaks during long sitting periods reduce the acute glucose and i
 
 DeskBreak gives general movement reminders. It is not medical care and does not treat any condition. Stop an exercise that causes pain, dizziness, or unusual symptoms, and seek medical advice when needed.
 
+## Privacy
+
+DeskBreak runs entirely in the browser. It has no account and no backend. Activity history stays on the device.
+
+## License
+
+MIT
+
 ## Development
 
 DeskBreak is a static site with no build step. Serve the `src/` directory with any static file server:
@@ -30,10 +38,4 @@ python3 -m http.server 8000
 
 Then open `http://localhost:8000` in a browser.
 
-## Privacy
 
-DeskBreak runs entirely in the browser. It has no account and no backend. Activity history stays on the device.
-
-## License
-
-MIT

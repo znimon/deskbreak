@@ -1,57 +1,126 @@
-# Which named bundles are available to offer for each break length. Each
-# bundle is just a list of exercise ids (from the exercises list below) —
-# add a new bundle by adding a new key and listing the ids it should
-# contain. A bundle can list as many exercises as you want, and any
-# exercise (including a walk) can appear in it — nothing is special-cased.
+# Which named bundles are available to offer for each break length.
+# Each bundle is a list of exercise ids from the exercises list below.
 #
-# Every bundle defined here is shown every time (scroll right to see more
-# as you add bundles). One is always marked Suggested and shown first —
-# whichever bundle comes right after the one used last time this break
-# length was taken, cycling back to the first bundle after the last.
+# 3-minute breaks contain at most 2 exercises.
+# 5-minute breaks contain 3 exercises.
+#
+# Every bundle defined here is shown every time. One is always marked
+# Suggested and shown first, whichever bundle comes right after the one
+# used last time for that break length, cycling back to the first bundle.
+
 breaks:
   "3":
     bundles:
-      3-bundle-1:
-        - walk-3
+      3-circulation:
+        - walk-2
         - squats
-      3-bundle-2:
-        - calf-raises
-      3-bundle-3:
-        - knee-raises
-      3-bundle-4:
-        - pushups
-      3-bundle-5:
-        - walkout-planks
-      3-bundle-6:
+
+      3-upper-back:
         - thoracic-rotations
-      3-bundle-7:
-        - hip-flexor-stretch
-      3-bundle-8:
-        - wall-slides
-  "5":
-    bundles:
-      5-bundle-1:
-        - walk-5
+        - bench-t-spine-stretch
+
+      3-lower-leg:
+        - calf-raises
+        - knee-raises
+
+      3-strength:
+        - pushups
         - squats
-        - pushups
-      5-bundle-2:
-        - calf-raises
-        - walkout-planks
-      5-bundle-3:
-        - knee-raises
-        - thoracic-rotations
-      5-bundle-4:
+
+      3-hips-spine:
         - hip-flexor-stretch
+        - thoracic-rotations
+
+      3-core-shoulders:
+        - walkouts
         - wall-slides
 
-# Exercise pool. Edit this list to add, remove, or change movements, then
-# reference the id from a bundle above to include it in a break.
-#
-# category: "evidence" movements have direct randomized-trial support for
-# interrupting sitting; "additional" movements are reasonable general
-# strength/mobility choices but must not be presented as having the same
-# level of evidence.
+      3-lower-body:
+        - runners-stretch
+        - calf-raises
+
+      3-hip-mobility:
+        - hip-circles
+        - hamstring-sweeps
+
+      3-neck-upper-back:
+        - neck-rotations
+        - thoracic-rotations
+
+      3-mobility:
+        - runners-stretch
+        - wall-slides
+
+      3-posture:
+        - wall-slides
+        - thoracic-rotations
+
+  "5":
+    bundles:
+      5-full-body:
+        - walk-3
+        - squats
+        - pushups
+
+      5-upper-body:
+        - thoracic-rotations
+        - bench-t-spine-stretch
+        - wall-slides
+
+      5-lower-body:
+        - runners-stretch
+        - reverse-lunges
+        - calf-raises
+
+      5-walk-mobility:
+        - walk-3
+        - hip-flexor-stretch
+        - thoracic-rotations
+
+      5-strength:
+        - squats
+        - pushups
+        - wall-slides
+
+      5-hip-mobility:
+        - hip-circles
+        - hamstring-sweeps
+        - reverse-lunges
+
+      5-walk-strength:
+        - walk-3
+        - calf-raises
+        - pushups
+
+      5-lower-reset:
+        - hip-flexor-stretch
+        - runners-stretch
+        - squats
+
+      5-core-upper:
+        - walkouts
+        - bench-t-spine-stretch
+        - wall-slides
+
+      5-mobility:
+        - hip-circles
+        - thoracic-rotations
+        - neck-rotations
+
+      5-posture:
+        - wall-slides
+        - bench-t-spine-stretch
+        - neck-rotations
+
+
 exercises:
+  - id: walk-2
+    name: Walk
+    target: 2 mins
+    category: evidence
+    region: full-body
+    type: cardio
+
   - id: walk-3
     name: Walk
     target: 3 mins
@@ -59,65 +128,100 @@ exercises:
     region: full-body
     type: cardio
 
-  - id: walk-5
-    name: Walk
-    target: 5 mins
-    category: evidence
-    region: full-body
-    type: cardio
-
   - id: squats
-    name: Squats
-    target: 8–12 reps
+    name: Air Squats
+    target: RPE 5
     category: evidence
     region: lower
     type: strength
 
   - id: calf-raises
-    name: Calf raises
-    target: 10–15 reps
+    name: Calf Raises
+    target: 15 reps
     category: evidence
     region: lower
     type: strength
 
   - id: knee-raises
-    name: Standing knee raises
-    target: 10–20 alternating reps
+    name: Knee Raises
+    target: 10 per side
     category: evidence
     region: lower
-    type: strength
+    type: mobility
 
   - id: pushups
-    name: Push-ups
-    target: 5–10 reps
+    name: Push-Ups
+    target: RPE 5
     category: additional
     region: upper
     type: strength
 
-  - id: walkout-planks
-    name: Walkout planks
-    target: 3–5 reps
+  - id: walkouts
+    name: Walkouts
+    target: RPE 5
     category: additional
     region: core
     type: strength
 
+  - id: reverse-lunges
+    name: Reverse Lunges
+    target: RPE 5
+    category: additional
+    region: lower
+    type: strength
+
   - id: thoracic-rotations
-    name: Thoracic rotations
+    name: Thoracic Rotations
     target: 5 per side
     category: additional
     region: upper
     type: mobility
 
+  - id: bench-t-spine-stretch
+    name: Bench T-Spine Stretch
+    target: 5 reps
+    category: additional
+    region: upper
+    type: mobility
+
   - id: hip-flexor-stretch
-    name: Hip-flexor stretch
-    target: 20–30 sec per side
+    name: Hip Flexor Stretch
+    target: 20 sec per side
+    category: additional
+    region: lower
+    type: mobility
+
+  - id: runners-stretch
+    name: Runner's Stretch
+    target: 20 sec per side
+    category: additional
+    region: lower
+    type: mobility
+
+  - id: hip-circles
+    name: Hip Circles
+    target: 5 per side
+    category: additional
+    region: lower
+    type: mobility
+
+  - id: hamstring-sweeps
+    name: Hamstring Sweeps
+    target: 5 per side
     category: additional
     region: lower
     type: mobility
 
   - id: wall-slides
-    name: Wall slides
-    target: 8–12 reps
+    name: Wall Slides
+    target: 10 reps
+    category: additional
+    region: upper
+    type: mobility
+
+  - id: neck-rotations
+    name: Neck Rotations
+    target: 5 per side
     category: additional
     region: upper
     type: mobility
