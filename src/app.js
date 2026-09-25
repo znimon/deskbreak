@@ -265,7 +265,7 @@ const el = {
   breakChecklist: document.getElementById("break-checklist"),
   endBreakBtn: document.getElementById("end-break-btn"),
   cancelBreakBtn: document.getElementById("cancel-break-btn"),
-  settingsToggleBtn: document.getElementById("settings-toggle-btn"),
+  settingsToggleBtns: document.querySelectorAll(".settings-toggle-btn"),
   settingsPanel: document.getElementById("settings-panel"),
   settingsCloseBtn: document.getElementById("settings-close-btn"),
   darkModeToggle: document.getElementById("dark-mode-toggle"),
@@ -620,22 +620,26 @@ el.darkModeToggle.addEventListener("change", (event) => {
 // Settings panel: work-session length and timer sound. Both persist across
 // reloads. Changing the session length only affects breaks scheduled from
 // this point on (an in-progress countdown is not retroactively rescaled).
-el.settingsToggleBtn.addEventListener("click", () => {
-  primeAudio();
-  const isOpening = el.settingsPanel.classList.contains("hidden");
-  el.settingsPanel.classList.toggle("hidden");
-  // Explicitly hides the button while the panel is open, rather than
-  // relying on z-index/stacking alone — guarantees it is actually gone
-  // from the user's perspective instead of just "behind" in paint order.
-  // The settings panel is a full-screen sheet on every viewport width
-  // (see .icon-btn.panel-open in style.css), so this hides the button on
-  // desktop too, not just mobile.
-  el.settingsToggleBtn.classList.toggle("panel-open", isOpening);
+// One gear button lives in each screen's header (only one is ever visible
+// at a time), so the open/close state is applied to all of them together.
+el.settingsToggleBtns.forEach((btn) => {
+  btn.addEventListener("click", () => {
+    primeAudio();
+    const isOpening = el.settingsPanel.classList.contains("hidden");
+    el.settingsPanel.classList.toggle("hidden");
+    // Explicitly hides the button while the panel is open, rather than
+    // relying on z-index/stacking alone — guarantees it is actually gone
+    // from the user's perspective instead of just "behind" in paint order.
+    // The settings panel is a full-screen sheet on every viewport width
+    // (see .icon-btn.panel-open in style.css), so this hides the button on
+    // desktop too, not just mobile.
+    el.settingsToggleBtns.forEach((b) => b.classList.toggle("panel-open", isOpening));
+  });
 });
 
 el.settingsCloseBtn.addEventListener("click", () => {
   el.settingsPanel.classList.add("hidden");
-  el.settingsToggleBtn.classList.remove("panel-open");
+  el.settingsToggleBtns.forEach((b) => b.classList.remove("panel-open"));
 });
 
 el.sessionLengthRange.value = String(sessionMinutes);
