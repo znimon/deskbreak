@@ -127,6 +127,19 @@ body {
   font-family: "VT323", monospace;
 }
 
+/* Collapses every animation/transition in the file (existing ones, like
+   the button press, and the new interaction ones) to effectively
+   instant for anyone who has asked their OS to reduce motion. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+  }
+}
+
 /* A real flex sibling of the "DeskBreak" brand span inside
    .start-card-header (see below), not an absolutely-positioned overlay —
    that previously needed a hand-tuned pixel offset to line up with the
@@ -148,6 +161,15 @@ body {
   outline: none;
   box-shadow: none !important;
   flex-shrink: 0;
+  transition: transform 150ms ease;
+}
+
+.icon-btn:hover {
+  transform: scale(1.1) rotate(20deg);
+}
+
+.icon-btn:active {
+  transform: scale(0.95);
 }
 
 .icon-btn:focus-visible {
@@ -190,6 +212,26 @@ section {
 
 .screen {
   text-align: center;
+}
+
+/* Every screen switch (idle -> running -> ended, and back to idle on
+   restart) is a plain .hidden toggle, so there is no display transition
+   to hook into — this replays a short fade + rise from scratch each time
+   the element starts rendering again, which is enough to read as an
+   intentional transition rather than an instant swap. */
+@keyframes screen-enter {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.screen:not(.hidden) {
+  animation: screen-enter 240ms ease-out;
 }
 
 /* --- Cards: plain divs, background set directly --- */
@@ -299,6 +341,17 @@ section {
   margin-bottom: 0;
 }
 
+/* Registers --percent as a real animatable number — plain custom
+   properties are untyped, so a transition on one otherwise jumps
+   instantly instead of interpolating. This is what turns the ring's
+   per-tick (TICK_MS, 250ms) JS updates into a smooth sweep instead of a
+   visible step every quarter second. */
+@property --percent {
+  syntax: "<number>";
+  inherits: true;
+  initial-value: 0;
+}
+
 .countdown-ring {
   --percent: 0;
   position: relative;
@@ -312,6 +365,7 @@ section {
     var(--theme-accent) calc(var(--percent) * 1%),
     rgba(255, 247, 234, 0.25) calc(var(--percent) * 1%)
   );
+  transition: --percent 240ms linear;
 }
 
 /* Shifts the main ring up within .timer-display's own box — a transform
@@ -400,6 +454,15 @@ button.btn-outlined {
      like a physical pixel-art button — transitioning both properties
      together keeps the press and release feeling like one motion. */
   transition: transform 80ms ease, box-shadow 80ms ease;
+}
+
+/* Lifts slightly on hover, the opposite motion of the press below — the
+   shadow's offset stays fixed, so the growing gap between button and
+   shadow is what reads as "floating higher". Declared before :active so
+   a press while hovering still wins on specificity-tied source order. */
+button.btn-filled:hover,
+button.btn-outlined:hover {
+  transform: translateY(-2px);
 }
 
 /* Moves by exactly the shadow's own offset and drops the shadow, so the
@@ -566,6 +629,19 @@ dialog {
   padding: var(--space-lg);
   max-width: var(--dialog-max-width);
   width: 100%;
+  /* Fades and scales in from showModal(). `allow-discrete` is what lets a
+     transition run at all across the display:none -> block flip a native
+     dialog's [open] does — without it the browser skips straight to the
+     end state. Browsers without @starting-style support (below) just
+     show the dialog instantly, same as before this was added. */
+  transition: opacity 200ms ease, transform 200ms ease, display 200ms allow-discrete, overlay 200ms allow-discrete;
+}
+
+@starting-style {
+  dialog[open] {
+    opacity: 0;
+    transform: scale(0.94);
+  }
 }
 
 #break-due-dialog {
@@ -574,6 +650,13 @@ dialog {
 
 dialog::backdrop {
   background: rgba(0, 0, 0, 0.5);
+  transition: background-color 200ms ease, display 200ms allow-discrete, overlay 200ms allow-discrete;
+}
+
+@starting-style {
+  dialog[open]::backdrop {
+    background-color: transparent;
+  }
 }
 
 .break-dialog {
@@ -849,6 +932,25 @@ dialog::backdrop {
   color: var(--surface-text);
 }
 
+/* Slides up from the bottom on open, mirroring the full-screen sheet's
+   own "bottom edge of the viewport" origin — closing stays instant (a
+   plain .hidden toggle) since the panel is gone from the DOM's rendered
+   flow at that point anyway. */
+@keyframes settings-panel-enter {
+  from {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.settings-panel:not(.hidden) {
+  animation: settings-panel-enter 220ms ease-out;
+}
+
 #dark-mode-toggle,
 #dev-speed-toggle {
   accent-color: var(--theme-card);
@@ -878,6 +980,16 @@ dialog::backdrop {
   padding: 0;
   outline: none;
   box-shadow: none !important;
+  transition: transform 150ms ease, color 150ms ease;
+}
+
+.settings-close-btn:hover {
+  color: var(--surface-text);
+  transform: scale(1.1) rotate(90deg);
+}
+
+.settings-close-btn:active {
+  transform: scale(0.95);
 }
 
 /* Extra separation between sections (on top of the panel's own flex
