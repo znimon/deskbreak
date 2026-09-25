@@ -862,10 +862,12 @@ dialog[open]::backdrop {
 }
 
 /* Rep counts read as a small badge rather than plain text underneath the
-   exercise name — a bit more visual interest than a second text line. */
+   exercise name — a bit more visual interest than a second text line.
+   No margin-top: --space-2xs (the smallest step on the scale) still read
+   as too much air under the name, once added on top of both lines' own
+   line-height leading — the leading alone is enough separation. */
 .exercise-reps {
   display: block;
-  margin-top: var(--space-2xs);
   font-size: 0.85rem;
   font-weight: 600;
   /* Without this, Pico's global 1.5 line-height applies here (unlike
