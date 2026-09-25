@@ -1074,7 +1074,6 @@ dialog[open]::backdrop {
 
 .settings-range-value {
   min-width: 3.5rem;
-  text-align: right;
   font-variant-numeric: tabular-nums;
   font-size: 0.9rem;
   color: var(--surface-text);
