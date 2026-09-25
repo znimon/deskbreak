@@ -637,9 +637,20 @@ el.settingsToggleBtns.forEach((btn) => {
   });
 });
 
-el.settingsCloseBtn.addEventListener("click", () => {
+function closeSettingsPanel() {
   el.settingsPanel.classList.add("hidden");
   el.settingsToggleBtns.forEach((b) => b.classList.remove("panel-open"));
+}
+
+el.settingsCloseBtn.addEventListener("click", closeSettingsPanel);
+
+// The settings panel is a plain <aside>, not a native <dialog>, so it does
+// not get the browser's automatic Escape-to-close behavior the break
+// dialogs get for free (see setDialogOpen above) — wired up by hand here.
+document.addEventListener("keydown", (event) => {
+  if (event.key === "Escape" && !el.settingsPanel.classList.contains("hidden")) {
+    closeSettingsPanel();
+  }
 });
 
 el.sessionLengthRange.value = String(sessionMinutes);
