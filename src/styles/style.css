@@ -161,11 +161,12 @@ body {
   outline: none;
   box-shadow: none !important;
   flex-shrink: 0;
-  transition: transform 150ms ease;
+  transition: transform 150ms ease, opacity 150ms ease;
 }
 
 .icon-btn:hover {
-  transform: scale(1.1) rotate(20deg);
+  transform: scale(1.12);
+  opacity: 0.8;
 }
 
 .icon-btn:active {
@@ -216,22 +217,23 @@ section {
 
 /* Every screen switch (idle -> running -> ended, and back to idle on
    restart) is a plain .hidden toggle, so there is no display transition
-   to hook into — this replays a short fade + rise from scratch each time
-   the element starts rendering again, which is enough to read as an
+   to hook into — this replays a short fade + scale + rise from scratch
+   each time the element starts rendering again. The consistent upward
+   direction across every switch (not just this one) is what reads as an
    intentional transition rather than an instant swap. */
 @keyframes screen-enter {
   from {
     opacity: 0;
-    transform: translateY(6px);
+    transform: scale(0.98) translateY(10px);
   }
   to {
     opacity: 1;
-    transform: translateY(0);
+    transform: scale(1) translateY(0);
   }
 }
 
 .screen:not(.hidden) {
-  animation: screen-enter 240ms ease-out;
+  animation: screen-enter 280ms ease-out;
 }
 
 /* --- Cards: plain divs, background set directly --- */
@@ -456,13 +458,12 @@ button.btn-outlined {
   transition: transform 80ms ease, box-shadow 80ms ease;
 }
 
-/* Lifts slightly on hover, the opposite motion of the press below — the
-   shadow's offset stays fixed, so the growing gap between button and
-   shadow is what reads as "floating higher". Declared before :active so
+/* Scales up slightly on hover — liveliness without fighting the shadow's
+   fixed offset, the way a vertical lift did. Declared before :active so
    a press while hovering still wins on specificity-tied source order. */
 button.btn-filled:hover,
 button.btn-outlined:hover {
-  transform: translateY(-2px);
+  transform: scale(1.03);
 }
 
 /* Moves by exactly the shadow's own offset and drops the shadow, so the
@@ -932,23 +933,23 @@ dialog::backdrop {
   color: var(--surface-text);
 }
 
-/* Slides up from the bottom on open, mirroring the full-screen sheet's
-   own "bottom edge of the viewport" origin — closing stays instant (a
-   plain .hidden toggle) since the panel is gone from the DOM's rendered
-   flow at that point anyway. */
+/* Fades and scales up from the bottom on open, the same directional
+   language as .screen entrances above — closing stays instant (a plain
+   .hidden toggle) since the panel is gone from the DOM's rendered flow
+   at that point anyway. */
 @keyframes settings-panel-enter {
   from {
     opacity: 0;
-    transform: translateY(16px);
+    transform: scale(0.98) translateY(16px);
   }
   to {
     opacity: 1;
-    transform: translateY(0);
+    transform: scale(1) translateY(0);
   }
 }
 
 .settings-panel:not(.hidden) {
-  animation: settings-panel-enter 220ms ease-out;
+  animation: settings-panel-enter 260ms ease-out;
 }
 
 #dark-mode-toggle,
@@ -985,7 +986,7 @@ dialog::backdrop {
 
 .settings-close-btn:hover {
   color: var(--surface-text);
-  transform: scale(1.1) rotate(90deg);
+  transform: scale(1.12);
 }
 
 .settings-close-btn:active {
